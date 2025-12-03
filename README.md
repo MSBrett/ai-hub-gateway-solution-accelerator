@@ -465,6 +465,17 @@ Once deployed, access your Citadel AI Gateway through Azure API Management:
 - **Monitoring Dashboard**: Application Insights
 - **Usage Analytics**: Power BI Dashboard connected to Cosmos DB (optional)
 
+### 🧪 Validation Notebooks
+
+Use the following interactive Jupyter notebooks to validate and configure your Citadel Governance Hub deployment:
+
+| Notebook | Description |
+|----------|-------------|
+| [**LLM Backend Onboarding Runner**](./validation/llm-backend-onboarding-runner.ipynb) | Onboard existing LLMs (Microsoft Foundry models, Azure OpenAI, and others) into the AI Gateway. Generates source-controllable parameter files for LLM backends configuration. |
+| [**Citadel Governance Hub Primary Tests**](./validation/citadel-governance-hub-primary-tests.ipynb) | Test governance hub managed models through APIM. Includes Citadel Access Contract creation, API testing, token rate limiting validation, and streaming tests. |
+
+> 💡 **Tip**: These notebooks require Python with the `openai`, `requests`, and `matplotlib` among other packages. Ensure you have configured your environment variables before running.
+
 ---
 
 ## 📚 Comprehensive Documentation
