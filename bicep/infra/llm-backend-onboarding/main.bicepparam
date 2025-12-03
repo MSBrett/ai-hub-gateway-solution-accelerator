@@ -152,14 +152,3 @@ param deployUniversalLlmApi = false
 // - {gateway-url}/{apiPath}/models/... (Models inference endpoint)
 // ============================================================================
 param universalLlmApiPath = 'models'
-
-// ============================================================================
-// OPTIONAL: Resource Tags
-// ============================================================================
-// Tags to apply to created resources for organization and cost tracking
-// ============================================================================
-param tags = {
-  environment: 'development'
-  purpose: 'llm-backend-onboarding'
-  managedBy: 'bicep'
-}
