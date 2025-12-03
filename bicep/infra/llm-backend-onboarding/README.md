@@ -9,7 +9,7 @@ This package enables dynamic LLM backend routing without modifying APIM policies
 - 📦 **Automatic Backend Creation**: Create APIM backends from configuration
 - ⚖️ **Load Balancing**: Distribute requests across multiple backends for the same model
 - 🔄 **Automatic Failover**: Route to healthy backends when others are unavailable
-- 🔌 **Multi-Provider Support**: Azure AI Foundry, Azure OpenAI, and external LLM providers
+- 🔌 **Multi-Provider Support**: Microsoft Foundry, Azure OpenAI, and external LLM providers
 - 📝 **Declarative Configuration**: Simple `.bicepparam` files for version control
 
 ## What Gets Created
@@ -19,6 +19,19 @@ This package enables dynamic LLM backend routing without modifying APIM policies
 | **APIM Backends** | Individual backend resources for each LLM endpoint |
 | **Backend Pools** | Load-balanced pools for models with multiple backends |
 | **Policy Fragments** | Dynamic routing logic for model-based routing |
+
+## Prerequisites
+
+- Existing deployment of AI Citadel Governance Hub with:
+  - User-assigned managed identity configured
+  - APIs for Universal LLM API and Azure OpenAI API
+- LLM backends deployed and accessible:
+  - Microsoft Foundry with model deployments
+  - Azure OpenAI resources with model deployments
+  - APIM can reach the target backends from network perspective
+- Verify APIM's user assigned managed identity has required roles:
+   - `Cognitive Services OpenAI User` for Azure OpenAI
+   - `Cognitive Services User` for Microsoft Foundry
 
 ## Quick Start
 
@@ -63,11 +76,7 @@ param llmBackendConfig = [
 ### 3. Deploy
 
 ```bash
-az deployment sub create \
-  --name llm-backend-onboarding \
-  --location eastus \
-  --template-file main.bicep \
-  --parameters llm-backends-dev-local.bicepparam
+az deployment sub create --name llm-backend-onboarding --location eastus --template-file main.bicep --parameters llm-backends-dev-local.bicepparam
 ```
 
 ## Configuration Reference
@@ -76,7 +85,7 @@ az deployment sub create \
 
 | Property | Type | Required | Description |
 |----------|------|----------|-------------|
-| `backendId` | string | Yes | Unique identifier for the backend |
+| `backendId` | string | Yes | Unique identifier for the backend (usually the name of the backend resource) |
 | `backendType` | string | Yes | `ai-foundry`, `azure-openai`, or `external` |
 | `endpoint` | string | Yes | Base URL of the LLM service |
 | `authScheme` | string | Yes | `managedIdentity`, `apiKey`, or `token` |
@@ -164,7 +173,7 @@ param llmBackendConfig = [
     backendType: 'azure-openai'
     endpoint: 'https://YOUR-AOAI-RESOURCE.openai.azure.com/openai'
     authScheme: 'managedIdentity'
-    supportedModels: ['gpt-4', 'gpt-35-turbo', 'text-embedding-ada-002']
+    supportedModels: ['gpt-4o', 'gpt-4o-mini', 'text-embedding-ada-002']
     priority: 1
     weight: 100
   }
@@ -175,7 +184,7 @@ param llmBackendConfig = [
 
 ```
 1. Client → APIM Gateway
-   POST /llm/openai/chat/completions
+   POST /models/chat/completions
    Body: { "model": "gpt-4o", "messages": [...] }
 
 2. Extract Model
@@ -196,39 +205,41 @@ param llmBackendConfig = [
    → Client receives response with usage headers
 ```
 
-## RBAC Configuration
-
-Control which clients can access which backends using the `allowedBackendPools` policy variable:
-
-```xml
-<!-- In your product policy -->
-<set-variable name="allowedBackendPools" value="aif-citadel-primary,aif-citadel-secondary" />
-```
-
-Leave empty to allow all backend pools:
-```xml
-<set-variable name="allowedBackendPools" value="" />
-```
-
 ## Monitoring
 
 ### Key Metrics
 
+Connected Application Insights to APIM provides insights into backend performance:
+
 | Metric | Description |
 |--------|-------------|
-| Backend Health | APIM → Backends → Health status |
-| Request Distribution | Analytics → Backend dimension |
-| Error Rates | Failures by backend |
+| Application Map | Visual representation of dependencies performance |
+| Performance | For both operations and dependencies |
+| Failures | Failures by backend |
 | Latency | Response time per backend |
 
 ### Application Insights Query
 
 ```kusto
-requests
-| where name == "universal-llm-api"
-| extend model = tostring(customDimensions.model)
-| extend backend = tostring(customDimensions.backend)
-| summarize count(), avg(duration) by model, backend, bin(timestamp, 5m)
+// this query calculates LLM backend duration percentiles and count by target
+let start=ago(24h);
+let end=now();
+let timeGrain=5m;
+
+let dataset=dependencies
+// additional filters can be applied here
+| where timestamp > start and timestamp < end
+| where client_Type != "Browser"
+;
+// calculate duration percentiles and count for all dependencies (overall)
+dataset
+| summarize avg_duration=sum(itemCount * duration)/sum(itemCount), percentiles(duration, 50, 95, 99), count_=sum(itemCount)
+| project operation_Name="Overall", avg_duration, percentile_duration_50, percentile_duration_95, percentile_duration_99, count_
+| union(dataset
+// change 'target' on the below line to segment by a different property
+| summarize avg_duration=sum(itemCount * duration)/sum(itemCount), percentiles(duration, 50, 95, 99), count_=sum(itemCount) by target
+| sort by avg_duration desc, count_ desc
+)
 ```
 
 ## Troubleshooting
@@ -247,20 +258,11 @@ requests
 
 ### "401 Unauthorized" Error
 
-1. Verify managed identity has required roles:
+1. Verify APIM's managed identity has required roles:
    - `Cognitive Services OpenAI User` for Azure OpenAI
    - `Cognitive Services User` for AI Foundry
-2. Check named value `uami-client-id` is set correctly
-
-## Prerequisites
-
-- Existing APIM instance with:
-  - User-assigned managed identity configured
-  - Managed identity assigned to APIM
-- LLM backends deployed and accessible:
-  - AI Foundry projects with model deployments
-  - Azure OpenAI resources with model deployments
-- Managed identity has RBAC roles on backend resources
+2. `Unauthorized model access` indicates used access contract product is restricted for the model
+3. Check named value `uami-client-id` is set correctly to APIM's managed identity client ID
 
 ## Files
 
@@ -287,6 +289,6 @@ llm-backend-onboarding/
 
 ## Related Guides
 
-- [Citadel Access Contracts](../../guides/Citadel-Access-Contracts.md) - Configure use case access
-- [Full Deployment Guide](../../guides/full-deployment-guide.md) - Complete Citadel deployment
+- [Citadel Access Contracts](../../../guides/Citadel-Access-Contracts.md) - Configure use case access
+- [Full Deployment Guide](../....//guides/full-deployment-guide.md) - Complete Citadel deployment
 - [Dynamic LLM Backend Configuration](../../guides/archived/dynamic-llm-backend-configuration.md) - Detailed routing guide
