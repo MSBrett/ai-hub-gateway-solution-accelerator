@@ -485,6 +485,7 @@ Master Citadel implementation and operations with our detailed guides:
 | Guide | Description |
 |-------|-------------|
 | [LLM-Backend-Onboarding](./guides/LLM-Backend-Onboarding.md) | Add Azure OpenAI instances and models (including Realtime API) |
+| [**🆕 LLM Backend Onboarding Guide**](./guides/LLM-Backend-Onboarding-Guide.md) | **Independent LLM backend routing deployment with load balancing and failover** |
 
 ### 🛡️ **Security & Compliance**
 

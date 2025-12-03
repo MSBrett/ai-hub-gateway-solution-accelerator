@@ -11,7 +11,7 @@ This implementation enables **flexible, scalable LLM backend management** in Azu
 ✅ **Automatic Load Balancing**: Requests distributed across multiple backends for the same model
 ✅ **Intelligent Failover**: Circuit breakers and health checks for resilience
 ✅ **Zero Policy Changes**: Add new models/backends without modifying XML policies
-✅ **Flexible Authentication**: Managed identity, API key, or token-based auth
+✅ **Flexible Authentication**: Managed identity, API key, or token-based authentication
 ✅ **Priority & Weight Routing**: Control traffic distribution with granular settings
 
 ## Architecture Changes

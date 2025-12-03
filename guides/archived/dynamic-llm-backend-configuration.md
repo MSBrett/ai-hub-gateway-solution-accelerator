@@ -86,7 +86,7 @@ Each backend in the `llmBackendConfig` array has the following properties:
       "backendType": "ai-foundry",
       "endpoint": "https://my-project-eastus.eastus.inference.ml.azure.com",
       "authScheme": "managedIdentity",
-      "supportedModels": ["gpt-4", "gpt-4-turbo"],
+      "supportedModels": ["gpt-4o", "gpt-4o-mini"],
       "priority": 1,
       "weight": 100
     },
@@ -95,7 +95,7 @@ Each backend in the `llmBackendConfig` array has the following properties:
       "backendType": "azure-openai",
       "endpoint": "https://my-openai-westus.openai.azure.com",
       "authScheme": "managedIdentity",
-      "supportedModels": ["gpt-4", "gpt-4-turbo"],
+      "supportedModels": ["gpt-4o", "gpt-4o-mini"],
       "priority": 2,
       "weight": 50
     },
