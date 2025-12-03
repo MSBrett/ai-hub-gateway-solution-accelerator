@@ -15,25 +15,25 @@ The LLM Backend Onboarding deployment enables dynamic routing of LLM requests ac
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                          APIM Gateway                                │
+│                          APIM Gateway                               │
 ├─────────────────────────────────────────────────────────────────────┤
-│  Universal LLM API                                                   │
+│  Universal LLM API                                                  │
 │  ├── /chat/completions                                              │
 │  ├── /completions                                                   │
 │  ├── /embeddings                                                    │
 │  └── /images/generations                                            │
 ├─────────────────────────────────────────────────────────────────────┤
-│  Policy Fragments                                                    │
+│  Policy Fragments                                                   │
 │  ├── set-backend-pools (dynamic pool routing)                       │
-│  ├── set-backend-authorization (managed identity/API key)          │
+│  ├── set-backend-authorization (managed identity/API key)           │
 │  ├── set-target-backend-pool (load balancing)                       │
 │  └── set-llm-requested-model (model extraction)                     │
 ├─────────────────────────────────────────────────────────────────────┤
-│  Backend Pools                                                       │
+│  Backend Pools                                                      │
 │  ├── pool-gpt-4o (multiple backends)                                │
 │  └── pool-gpt-4o-mini (multiple backends)                           │
 ├─────────────────────────────────────────────────────────────────────┤
-│  Backends                                                            │
+│  Backends                                                           │
 │  ├── llm-foundry-east-us (AI Foundry)                               │
 │  ├── llm-foundry-west-us (AI Foundry)                               │
 │  └── llm-openai-sweden (Azure OpenAI)                               │
@@ -44,7 +44,7 @@ The LLM Backend Onboarding deployment enables dynamic routing of LLM requests ac
 
 - Existing APIM instance deployed via the AI Hub Gateway Solution Accelerator
 - APIM Managed Identity with appropriate permissions
-- At least one LLM backend (Azure OpenAI, AI Foundry, or external)
+- At least one existing LLM backend (Azure OpenAI, AI Foundry, or external)
 - Azure CLI and Bicep CLI installed
 
 ## Quick Start

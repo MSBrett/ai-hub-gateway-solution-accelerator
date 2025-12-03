@@ -207,12 +207,12 @@ param languageServiceExternalNetworkAccess string = 'Disabled'
 @allowed([ 'Enabled', 'Disabled' ])
 param aiContentSafetyExternalNetworkAccess string = 'Disabled'
 
-@description('Use Azure Monitor Private Link Scope for Log Analytics and Application Insights.')
-param useAzureMonitorPrivateLinkScope bool = false
-
 @description('AI Foundry external network access.')
 @allowed([ 'Enabled', 'Disabled' ])
 param aiFoundryExternalNetworkAccess string = 'Disabled'
+
+@description('Use Azure Monitor Private Link Scope for Log Analytics and Application Insights.')
+param useAzureMonitorPrivateLinkScope bool = false
 
 //
 // FEATURE FLAGS - Deploy specific capabilities

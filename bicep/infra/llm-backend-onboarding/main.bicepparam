@@ -134,21 +134,3 @@ param llmBackendConfig = [
 // Recommended: true for production environments
 // ============================================================================
 param configureCircuitBreaker = true
-
-// ============================================================================
-// OPTIONAL: Deploy Universal LLM API
-// ============================================================================
-// Set to true to deploy the Universal LLM API endpoints (/llm/openai and /llm/models)
-// Set to false if the API already exists and you only want to update backends
-// ============================================================================
-param deployUniversalLlmApi = false
-
-// ============================================================================
-// OPTIONAL: Universal LLM API Path
-// ============================================================================
-// The base path for the target LLM API in APIM (universal llm or legacy Azure OpenAI)
-// The final endpoints will be:
-// - {gateway-url}/{apiPath}/openai/... (OpenAI-compatible endpoint)
-// - {gateway-url}/{apiPath}/models/... (Models inference endpoint)
-// ============================================================================
-param universalLlmApiPath = 'models'

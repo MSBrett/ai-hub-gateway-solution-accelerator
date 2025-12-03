@@ -171,3 +171,154 @@ class APIMClientTool:
         # Convert set to sorted list for consistent output
         return sorted(list(supported_models))
 
+    def get_backends(self) -> tuple[list[dict], list[dict]]:
+        """
+        Retrieves all backends from APIM and categorizes them into individual backends and backend pools.
+        
+        Returns:
+            Tuple of (individual_backends, backend_pools) where each is a list of dictionaries
+            
+        Raises:
+            RuntimeError: If backends cannot be retrieved
+        """
+        try:
+            utils.print_info("Retrieving APIM backends using Azure SDK...")
+            
+            backends = self.client.backend.list_by_service(
+                resource_group_name=self.resource_group_name,
+                service_name=self.apim_resource_name
+            )
+            
+            individual_backends = []
+            backend_pools = []
+            
+            for backend in backends:
+                backend_name = backend.name or ''
+                backend_url = backend.url or ''
+                backend_type = backend.type if hasattr(backend, 'type') else None
+                description = backend.description or ''
+                
+                # Check if it's a pool type backend
+                is_pool = False
+                pool_services = []
+                
+                # Check for pool property
+                if hasattr(backend, 'pool') and backend.pool is not None:
+                    is_pool = True
+                    if hasattr(backend.pool, 'services') and backend.pool.services:
+                        pool_services = [
+                            {
+                                'id': svc.id if hasattr(svc, 'id') else str(svc),
+                                'priority': svc.priority if hasattr(svc, 'priority') else None,
+                                'weight': svc.weight if hasattr(svc, 'weight') else None
+                            }
+                            for svc in backend.pool.services
+                        ]
+                
+                if is_pool:
+                    backend_pools.append({
+                        'name': backend_name,
+                        'description': description,
+                        'services': pool_services
+                    })
+                    utils.print_info(f"📦 Backend Pool: {backend_name} ({len(pool_services)} backends)")
+                else:
+                    # Extract supported models from description if present
+                    supported_models = []
+                    if 'Supports models:' in description:
+                        models_str = description.split('Supports models:')[-1].strip()
+                        supported_models = [m.strip() for m in models_str.split(',')]
+                    
+                    individual_backends.append({
+                        'name': backend_name,
+                        'url': backend_url,
+                        'description': description,
+                        'supportedModels': supported_models
+                    })
+                    utils.print_info(f"🔗 Backend: {backend_name} -> {backend_url}")
+            
+            utils.print_ok(f"Found {len(individual_backends)} individual backends and {len(backend_pools)} backend pools")
+            return individual_backends, backend_pools
+            
+        except Exception as e:
+            raise RuntimeError(f"Failed to retrieve backends: {str(e)}") from e
+
+    def get_named_value(self, named_value_id: str) -> str | None:
+        """
+        Retrieves a named value from APIM.
+        
+        Args:
+            named_value_id: The ID of the named value to retrieve
+            
+        Returns:
+            The value of the named value, or None if not found
+        """
+        try:
+            named_value = self.client.named_value.get(
+                resource_group_name=self.resource_group_name,
+                service_name=self.apim_resource_name,
+                named_value_id=named_value_id
+            )
+            return named_value.value
+        except Exception as e:
+            utils.print_warning(f"Named value '{named_value_id}' not found: {str(e)}")
+            return None
+
+    def get_managed_identity_info(self) -> dict:
+        """
+        Retrieves managed identity information from the APIM service.
+        
+        Returns:
+            Dictionary with managed identity details including clientId, name, and resourceGroup
+        """
+        try:
+            apim_service = self.client.api_management_service.get(
+                resource_group_name=self.resource_group_name,
+                service_name=self.apim_resource_name
+            )
+            
+            result = {
+                'clientId': None,
+                'name': None,
+                'resourceGroup': self.resource_group_name
+            }
+            
+            # Try to get from named values first
+            client_id = self.get_named_value('uami-client-id')
+            if client_id:
+                result['clientId'] = client_id
+                utils.print_ok(f"Found managed identity client ID in named values: {client_id[:8]}...")
+            
+            # Get identity details from APIM service
+            if hasattr(apim_service, 'identity') and apim_service.identity:
+                identity = apim_service.identity
+                
+                # Check for user-assigned identities
+                if hasattr(identity, 'user_assigned_identities') and identity.user_assigned_identities:
+                    user_identities = identity.user_assigned_identities
+                    
+                    if user_identities:
+                        # Get the first user-assigned identity
+                        first_identity_id = list(user_identities.keys())[0]
+                        first_identity = user_identities[first_identity_id]
+                        
+                        if not result['clientId'] and hasattr(first_identity, 'client_id'):
+                            result['clientId'] = first_identity.client_id
+                        
+                        # Extract identity name and resource group from resource ID
+                        result['name'] = first_identity_id.split('/')[-1]
+                        if '/resourceGroups/' in first_identity_id:
+                            result['resourceGroup'] = first_identity_id.split('/resourceGroups/')[-1].split('/')[0]
+                        
+                        utils.print_ok(f"Found user-assigned managed identity: {result['name']}")
+            
+            return result
+            
+        except Exception as e:
+            utils.print_warning(f"Could not retrieve managed identity info: {str(e)}")
+            return {
+                'clientId': None,
+                'name': None,
+                'resourceGroup': self.resource_group_name
+            }
+

@@ -56,11 +56,11 @@ param llmBackendConfig array
 @description('Whether to configure circuit breaker for backends (recommended for production)')
 param configureCircuitBreaker bool = true
 
-@description('Whether to deploy the Universal LLM API (set to false if API already exists)')
-param deployUniversalLlmApi bool = true
+// @description('Whether to deploy the Universal LLM API (set to false if API already exists)')
+// param deployUniversalLlmApi bool = true
 
-@description('API path for the Universal LLM API (default: llm)')
-param universalLlmApiPath string = 'llm'
+// @description('API path for the Universal LLM API (default: llm)')
+// param universalLlmApiPath string = 'llm'
 
 // ============================================================================
 // EXISTING RESOURCES
@@ -132,18 +132,18 @@ module llmPolicyFragments 'modules/llm-policy-fragments.bicep' = {
   }
 }
 
-/**
- * Step 4: Deploy Universal LLM API (Optional)
- * Creates the unified API endpoint that uses the dynamic backends
- */
-module universalLlmApi 'modules/universal-llm-api.bicep' = if (deployUniversalLlmApi) {
-  name: 'universal-llm-api-deployment-${uniqueString(deployment().name)}'
-  scope: apimRg
-  params: {
-    apimServiceName: apim.name
-    apiPath: universalLlmApiPath
-  }
-}
+// /**
+//  * Step 4: Deploy Universal LLM API (Optional)
+//  * Creates the unified API endpoint that uses the dynamic backends
+//  */
+// module universalLlmApi 'modules/universal-llm-api.bicep' = if (deployUniversalLlmApi) {
+//   name: 'universal-llm-api-deployment-${uniqueString(deployment().name)}'
+//   scope: apimRg
+//   params: {
+//     apimServiceName: apim.name
+//     apiPath: universalLlmApiPath
+//   }
+// }
 
 // ============================================================================
 // OUTPUTS
@@ -170,8 +170,8 @@ output modelToBackendMap object = llmBackendPools.outputs.modelToBackendMap
 @description('All supported models across all backends')
 output supportedModels array = union([], map(llmBackendConfig, config => config.supportedModels))
 
-@description('Universal LLM API endpoint (if deployed)')
-output universalLlmApiEndpoint string = deployUniversalLlmApi ? '${apimService.properties.gatewayUrl}/${universalLlmApiPath}' : ''
+// @description('Universal LLM API endpoint (if deployed)')
+// output universalLlmApiEndpoint string = deployUniversalLlmApi ? '${apimService.properties.gatewayUrl}/${universalLlmApiPath}' : ''
 
 @description('Policy fragment names')
 output policyFragments object = {

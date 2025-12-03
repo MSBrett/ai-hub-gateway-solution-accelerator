@@ -19,42 +19,43 @@ This package enables dynamic LLM backend routing without modifying APIM policies
 | **APIM Backends** | Individual backend resources for each LLM endpoint |
 | **Backend Pools** | Load-balanced pools for models with multiple backends |
 | **Policy Fragments** | Dynamic routing logic for model-based routing |
-| **Universal LLM API** | Unified OpenAI-compatible endpoint (optional) |
 
 ## Quick Start
 
 ### 1. Copy the Parameter Template
 
 ```bash
-cp main.bicepparam my-backends.bicepparam
+cp main.bicepparam llm-backends-dev-local.bicepparam
 ```
 
 ### 2. Configure Your Backends
 
-Edit `my-backends.bicepparam`:
+Edit `llm-backends-dev-local.bicepparam`:
 
 ```bicep
 using 'main.bicep'
 
 param apim = {
-  subscriptionId: '<your-subscription-id>'
-  resourceGroupName: 'rg-citadel-governance-hub'
-  name: 'apim-citadel'
+  subscriptionId: '00000000-0000-0000-0000-000000000000' // Replace with your subscription ID
+  resourceGroupName: 'rg-citadel-governance-hub'         // Replace with your APIM resource group
+  name: 'apim-citadel-governance-hub'                    // Replace with your APIM name
 }
 
 param apimManagedIdentity = {
-  subscriptionId: '<your-subscription-id>'
-  resourceGroupName: 'rg-citadel-governance-hub'
-  name: 'id-apim-citadel'
+  subscriptionId: '00000000-0000-0000-0000-000000000000' // Replace with your subscription ID
+  resourceGroupName: 'rg-citadel-governance-hub'         // Replace with your identity resource group
+  name: 'id-apim-citadel'                                // Replace with your managed identity name
 }
 
 param llmBackendConfig = [
   {
-    backendId: 'aif-primary'
+    backendId: 'aif-citadel-primary'
     backendType: 'ai-foundry'
-    endpoint: 'https://my-foundry.services.ai.azure.com/models'
+    endpoint: 'https://aif-RESOURCE_TOKEN-0.services.ai.azure.com/models'
     authScheme: 'managedIdentity'
-    supportedModels: ['gpt-4o', 'gpt-4o-mini']
+    supportedModels: ['gpt-4o', 'gpt-4o-mini', 'DeepSeek-R1', 'Phi-4']
+    priority: 1
+    weight: 100
   }
 ]
 ```
@@ -66,7 +67,7 @@ az deployment sub create \
   --name llm-backend-onboarding \
   --location eastus \
   --template-file main.bicep \
-  --parameters my-backends.bicepparam
+  --parameters llm-backends-dev-local.bicepparam
 ```
 
 ## Configuration Reference
@@ -109,11 +110,13 @@ az deployment sub create \
 ```bicep
 param llmBackendConfig = [
   {
-    backendId: 'aif-gpt4'
+    backendId: 'aif-citadel-primary'
     backendType: 'ai-foundry'
-    endpoint: 'https://my-foundry.services.ai.azure.com/models'
+    endpoint: 'https://aif-RESOURCE_TOKEN-0.services.ai.azure.com/models'
     authScheme: 'managedIdentity'
-    supportedModels: ['gpt-4o', 'gpt-4o-mini', 'Phi-4']
+    supportedModels: ['gpt-4o', 'gpt-4o-mini', 'DeepSeek-R1', 'Phi-4']
+    priority: 1
+    weight: 100
   }
 ]
 ```
@@ -123,20 +126,20 @@ param llmBackendConfig = [
 ```bicep
 param llmBackendConfig = [
   {
-    backendId: 'aif-eastus'
+    backendId: 'aif-citadel-primary'
     backendType: 'ai-foundry'
-    endpoint: 'https://foundry-eastus.services.ai.azure.com/models'
+    endpoint: 'https://aif-RESOURCE_TOKEN-0.services.ai.azure.com/models'
     authScheme: 'managedIdentity'
-    supportedModels: ['gpt-4o']
+    supportedModels: ['gpt-4o', 'gpt-4o-mini', 'DeepSeek-R1', 'Phi-4']
     priority: 1
     weight: 100
   }
   {
-    backendId: 'aif-westus'
+    backendId: 'aif-citadel-secondary'
     backendType: 'ai-foundry'
-    endpoint: 'https://foundry-westus.services.ai.azure.com/models'
+    endpoint: 'https://aif-RESOURCE_TOKEN-1.services.ai.azure.com/models'
     authScheme: 'managedIdentity'
-    supportedModels: ['gpt-4o']
+    supportedModels: ['gpt-5', 'DeepSeek-R1']
     priority: 2
     weight: 50
   }
@@ -148,18 +151,22 @@ param llmBackendConfig = [
 ```bicep
 param llmBackendConfig = [
   {
-    backendId: 'aif-llama'
+    backendId: 'aif-citadel-primary'
     backendType: 'ai-foundry'
-    endpoint: 'https://llama-project.services.ai.azure.com/models'
+    endpoint: 'https://aif-RESOURCE_TOKEN-0.services.ai.azure.com/models'
     authScheme: 'managedIdentity'
-    supportedModels: ['Llama-3.3-70B-Instruct']
+    supportedModels: ['gpt-4o', 'gpt-4o-mini', 'DeepSeek-R1', 'Phi-4']
+    priority: 1
+    weight: 100
   }
   {
-    backendId: 'aoai-gpt4'
+    backendId: 'aoai-eastus-gpt4'
     backendType: 'azure-openai'
-    endpoint: 'https://my-openai.openai.azure.com/openai'
+    endpoint: 'https://YOUR-AOAI-RESOURCE.openai.azure.com/openai'
     authScheme: 'managedIdentity'
-    supportedModels: ['gpt-4', 'gpt-35-turbo']
+    supportedModels: ['gpt-4', 'gpt-35-turbo', 'text-embedding-ada-002']
+    priority: 1
+    weight: 100
   }
 ]
 ```
@@ -195,7 +202,7 @@ Control which clients can access which backends using the `allowedBackendPools` 
 
 ```xml
 <!-- In your product policy -->
-<set-variable name="allowedBackendPools" value="aif-gpt4,aif-embeddings" />
+<set-variable name="allowedBackendPools" value="aif-citadel-primary,aif-citadel-secondary" />
 ```
 
 Leave empty to allow all backend pools:
