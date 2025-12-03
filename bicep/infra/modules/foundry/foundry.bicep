@@ -1,75 +1,83 @@
 /**
- * @module openai-v2
+ * @module foundry
  * @description This module defines the Azure Cognitive Services OpenAI resources using Bicep.
  * This is version 2 (v2) of the OpenAI Bicep module.
  */
-
 // ------------------
 //    PARAMETERS
 // ------------------
-
 // ------------------
-
 // aiservices_config = [{"name": "foundry1", "location": "swedencentral"},
 //                      {"name": "foundry2", "location": "eastus2"}]
-
 // models_config = [{"name": "gpt-4o-mini", "publisher": "OpenAI", "version": "2024-07-18", "sku": "GlobalStandard", "capacity": 100},
 //                  {"name": "DeepSeek-R1", "publisher": "DeepSeek", "version": "1", "sku": "GlobalStandard", "capacity": 1},
 //                  {"name": "Phi-4", "publisher": "Microsoft", "version": "3", "sku": "GlobalStandard", "capacity": 1}]
-
 // aiservices_config = [{"name": "foundry1", "location": "eastus"},
 //                     {"name": "foundry2", "location": "swedencentral"},
 //                     {"name": "foundry3", "location": "eastus2"}]
-
 // models_config = [{"name": "gpt-4.1", "publisher": "OpenAI", "version": "2025-04-14", "sku": "GlobalStandard", "capacity": 20, "aiservice": "foundry1"},
 //                  {"name": "gpt-4.1-mini", "publisher": "OpenAI", "version": "2025-04-14", "sku": "GlobalStandard", "capacity": 20, "aiservice": "foundry2"},
 //                  {"name": "gpt-4.1-nano", "publisher": "OpenAI", "version": "2025-04-14", "sku": "GlobalStandard", "capacity": 20, "aiservice": "foundry2"},
 //                  {"name": "model-router", "publisher": "OpenAI", "version": "2025-05-19", "sku": "GlobalStandard", "capacity": 20, "aiservice": "foundry3"},
 //                  {"name": "gpt-5", "publisher": "OpenAI", "version": "2025-08-07", "sku": "GlobalStandard", "capacity": 20, "aiservice": "foundry3"},
 //                  {"name": "DeepSeek-R1", "publisher": "DeepSeek", "version": "1", "sku": "GlobalStandard", "capacity": 20, "aiservice": "foundry3"}]
-
 @description('Configuration array for AI Foundry resources')
 param aiServicesConfig array = []
-
 @description('Configuration array for the model deployments')
 param modelsConfig array = []
-
 @description('Log Analytics Workspace Id')
 param lawId string = ''
-
 @description('APIM Pricipal Id')
 param  apimPrincipalId string
-
 @description('AI Foundry project name')
 param  foundryProjectName string = 'citadel-governance-project'
-
 @description('The instrumentation key for Application Insights')
 @secure()
 param appInsightsInstrumentationKey string = ''
-
 @description('The resource ID for Application Insights')
 param appInsightsId string = ''
-
 @description('Controls public network access for the Cognitive Services account')
 @allowed(['Enabled', 'Disabled'])
 param publicNetworkAccess string = 'Enabled'
-
 @description('Disable key based authentication, enabling only Azure AD authentication')
 param disableKeyAuth bool = false
-
 @description('Main deployment resource token')
 param resourceToken string = uniqueString(subscription().id, resourceGroup().id)
-
 @description('Tags to be applied to all resources')
 param tags object = {}
-
+// ------------------
+//    NETWORKING PARAMETERS
+// ------------------
+@description('Name of the Virtual Network')
+param vNetName string
+@description('Location of the Virtual Network')
+param vNetLocation string
+@description('Name of the private endpoint subnet')
+param privateEndpointSubnetName string
+@description('Resource group containing the Virtual Network')
+param vNetRG string
+@description('Base name for AI Foundry private endpoints. Leave blank to use default naming.')
+param aiFoundryPrivateEndpointBaseName string = ''
+@description('DNS zone name for AI Services private endpoint')
+param aiServicesDnsZoneName string = 'privatelink.services.ai.azure.com'
+@description('Resource group containing the DNS zones')
+param dnsZoneRG string
+@description('Subscription ID containing the DNS zones')
+param dnsSubscriptionId string
 // ------------------
 //    VARIABLES
 // ------------------
-
 var azureRoles = loadJsonContent('../azure-roles.json')
 var cognitiveServicesUserRoleDefinitionID = resourceId('Microsoft.Authorization/roleDefinitions', azureRoles.CognitiveServicesUser)
-
+// Get existing VNet and subnet for private endpoint
+resource vnet 'Microsoft.Network/virtualNetworks@2022-01-01' existing = {
+  name: vNetName
+  scope: resourceGroup(vNetRG)
+}
+resource subnet 'Microsoft.Network/virtualNetworks/subnets@2022-01-01' existing = {
+  name: privateEndpointSubnetName
+  parent: vnet
+}
 
 // ------------------
 //    RESOURCES
@@ -88,15 +96,16 @@ resource foundryResources 'Microsoft.CognitiveServices/accounts@2025-06-01' = [f
   properties: {
     // required to work in AI Foundry
     allowProjectManagement: true 
-//!empty(languageServiceName) ? languageServiceName : '${abbrs.cognitiveServicesAccounts}language-${resourceToken}'
     customSubDomainName: toLower(!empty(config.customSubDomainName) ? config.customSubDomainName : (!empty(config.name) ? config.name : 'aif-${resourceToken}-${i}'))
-
     disableLocalAuth: disableKeyAuth
-
     publicNetworkAccess: publicNetworkAccess
+    networkAcls: {
+      defaultAction: 'Deny'
+      ipRules: []
+      virtualNetworkRules: []
+    }
   }  
 }]
-
 resource aiProject 'Microsoft.CognitiveServices/accounts/projects@2025-04-01-preview' = [for (config, i) in aiServicesConfig: {  
   #disable-next-line BCP334
   name: config.defaultProjectName != null ? config.defaultProjectName : foundryProjectName
@@ -111,7 +120,6 @@ resource aiProject 'Microsoft.CognitiveServices/accounts/projects@2025-04-01-pre
   }
 }]
 
-
 var aiProjectManagerRoleDefinitionID = 'eadc314b-1a2d-4efa-be10-5d325db5065e' 
 resource aiProjectManagerRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for (config, i) in aiServicesConfig: {
     scope: foundryResources[i]
@@ -121,7 +129,6 @@ resource aiProjectManagerRoleAssignment 'Microsoft.Authorization/roleAssignments
       principalId: deployer().objectId
     }
 }]
-
 
 // https://learn.microsoft.com/azure/templates/microsoft.insights/diagnosticsettings
 resource diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = [for (config, i) in aiServicesConfig: if (lawId != '') {
@@ -138,7 +145,6 @@ resource diagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-01-pr
     ]
   }
 }]
-
 resource appInsightsConnection 'Microsoft.CognitiveServices/accounts/connections@2025-06-01' = [for (config, i) in aiServicesConfig: if (length(appInsightsId) > 0 && length(appInsightsInstrumentationKey) > 0) {
   parent: foundryResources[i]
   name: '${foundryResources[i].name}-appInsights-connection'
@@ -160,7 +166,6 @@ resource appInsightsConnection 'Microsoft.CognitiveServices/accounts/connections
     }    
   }
 }]
-
 resource roleAssignmentCognitiveServicesUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for (config, i) in aiServicesConfig: {
   scope: foundryResources[i]
   name: guid(subscription().id, resourceGroup().id, foundryResources[i].name, cognitiveServicesUserRoleDefinitionID, apimPrincipalId)
@@ -170,7 +175,6 @@ resource roleAssignmentCognitiveServicesUser 'Microsoft.Authorization/roleAssign
         principalType: 'ServicePrincipal'
     }
 }]
-
 module modelDeployments 'deployments.bicep' = [for (config, i) in aiServicesConfig: {
   name: take('models-${foundryResources[i].name}', 64)
   params: {
@@ -178,12 +182,30 @@ module modelDeployments 'deployments.bicep' = [for (config, i) in aiServicesConf
     modelsConfig: filter(modelsConfig, model => !contains(model, 'aiservice') || model.aiservice == foundryResources[i].name )
   }
 }]
-
+// Private endpoints for AI Foundry instances
+module privateEndpoints '../networking/private-endpoint.bicep' = [for (config, i) in aiServicesConfig: {
+  name: 'pe-${foundryResources[i].name}'
+  params: {
+    name: !empty(aiFoundryPrivateEndpointBaseName) ? '${aiFoundryPrivateEndpointBaseName}-${i}' : '${foundryResources[i].name}-pe'
+    privateLinkServiceId: foundryResources[i].id
+    groupIds: [
+      'account'
+    ]
+    dnsZoneName: aiServicesDnsZoneName
+    location: vNetLocation
+    privateEndpointSubnetId: subnet.id
+    dnsZoneRG: dnsZoneRG
+    dnsSubId: dnsSubscriptionId
+    tags: tags
+  }
+  dependsOn: [
+    modelDeployments
+  ]
+}]
 
 // ------------------
 //    OUTPUTS
 // ------------------
-
 output extendedAIServicesConfig array = [for (config, i) in aiServicesConfig: {
   // Original openAIConfig properties
   name: config.name

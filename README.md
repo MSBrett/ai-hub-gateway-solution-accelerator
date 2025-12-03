@@ -556,18 +556,24 @@ Master Citadel implementation and operations with our detailed guides:
 Citadel Governance Hub is continuously evolving as part of the **Foundry Citadel Platform** vision:
 
 ### ✅ **Current Release**
-
 - Unified AI Gateway with intelligent routing
 - Platform observability
+- Automated LLM onboarding with model-aware resilient routing
 - Universal LLM, Azure OpenAI, Azure OpenAI Realtime, AI Search, Document Intelligence integration
-- PII detection and content safety
+- PII detection and masking
+- Content safety enforcements
 - Usage analytics and cost management
+- Citadel Access Contracts support with automated onboarding
+- AI Registry for models and tools
+- Authentication support with Gateway keys or with both Gateway keys and JWT tokens
 
 ### 🚧 **Coming Soon**
-
 - AI Evaluation pipeline at the gateway level
-- Add support for A2A and agents publishing
+- Add support for A2A and agents publishing (integration with AI Gateway and AI Registry)
+- Add guidance for Citadel Publish Contracts
 - Defender enablement
+- JWT only authentication support (without Gateway keys)
+- Enhanced platform observability with custom dashboards and alerts (geared towards agents and MCP tools)
 
 ### 🔮 **Future Vision**
 

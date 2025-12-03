@@ -176,6 +176,9 @@ param aiContentSafetyPrivateEndpointName string = ''
 @description('API Management V2 private endpoint name. Leave blank to use default naming conventions.')
 param apimV2PrivateEndpointName string = ''
 
+@description('AI Foundry private endpoint base name. Leave blank to use default naming conventions.')
+param aiFoundryPrivateEndpointName string = ''
+
 // Services network access configuration
 
 @description('Network type for API Management service. Applies only to Premium and Developer SKUs.')
@@ -206,6 +209,10 @@ param aiContentSafetyExternalNetworkAccess string = 'Disabled'
 
 @description('Use Azure Monitor Private Link Scope for Log Analytics and Application Insights.')
 param useAzureMonitorPrivateLinkScope bool = false
+
+@description('AI Foundry external network access.')
+@allowed([ 'Enabled', 'Disabled' ])
+param aiFoundryExternalNetworkAccess string = 'Disabled'
 
 //
 // FEATURE FLAGS - Deploy specific capabilities
@@ -641,10 +648,19 @@ module foundry 'modules/foundry/foundry.bicep' = if(enableAIFoundry) {
     foundryProjectName: 'citadel-governance-project'
     appInsightsInstrumentationKey: monitoring.outputs.foundryApplicationInsightsInstrumentationKey
     appInsightsId: monitoring.outputs.foundryApplicationInsightsId
-    publicNetworkAccess: 'Enabled'
+    publicNetworkAccess: aiFoundryExternalNetworkAccess
     disableKeyAuth: false
     resourceToken: resourceToken
     tags: tags
+    // Networking parameters for private endpoints
+    vNetName: useExistingVnet ? vnetExisting.outputs.vnetName : vnet.outputs.vnetName
+    vNetLocation: useExistingVnet ? vnetExisting.outputs.location : vnet.outputs.location
+    vNetRG: useExistingVnet ? vnetExisting.outputs.vnetRG : vnet.outputs.vnetRG
+    privateEndpointSubnetName: useExistingVnet ? vnetExisting.outputs.privateEndpointSubnetName : vnet.outputs.privateEndpointSubnetName
+    aiFoundryPrivateEndpointBaseName: !empty(aiFoundryPrivateEndpointName) ? aiFoundryPrivateEndpointName : '${abbrs.cognitiveServicesAccounts}foundry-pe-${resourceToken}'
+    aiServicesDnsZoneName: aiServicesDnsZoneName
+    dnsZoneRG: !useExistingVnet ? resourceGroup.name : dnsZoneRG
+    dnsSubscriptionId: !empty(dnsSubscriptionId) ? dnsSubscriptionId : subscription().subscriptionId
   }
 }
 
