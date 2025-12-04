@@ -1,9 +1,9 @@
 using 'main.bicep'
 
 // ============================================================================
-// AI Hub Gateway - Use Case Onboarding Parameters
+// Citadel Access Contracts - Use Case Onboarding Parameters
 // ============================================================================
-// This parameter file is used to onboard a new use case to the AI Hub Gateway.
+// This parameter file is used to onboard a new use case to the AI Governance Hub.
 // It creates APIM products, subscriptions, and optionally stores credentials
 // in Azure Key Vault.
 //
@@ -24,7 +24,7 @@ using 'main.bicep'
 //
 // Example:
 // param apim = {
-//   subscriptionId: 'd2e7f84f-2790-4baa-9520-59ae8169ed0d'
+//   subscriptionId: 'd287984f-2790-4baa-9520-59ae8169ed0d'
 //   resourceGroupName: 'rg-ai-hub-gateway-prod'
 //   name: 'apim-aihub-prod-001'
 // }
@@ -33,35 +33,6 @@ param apim = {
   subscriptionId: '00000000-0000-0000-0000-000000000000' // Replace with your subscription ID
   resourceGroupName: 'rg-apim-resource-group'             // Replace with your APIM resource group
   name: 'apim-instance-name'                              // Replace with your APIM name
-}
-
-// ============================================================================
-// REQUIRED: Azure Key Vault Configuration
-// ============================================================================
-// Specifies the target Key Vault for storing endpoint URLs and API keys.
-// This Key Vault will store the generated APIM gateway endpoints and 
-// subscription keys for secure access by applications.
-//
-// Properties:
-// - subscriptionId: Azure subscription ID where Key Vault is deployed
-// - resourceGroupName: Resource group containing the Key Vault
-// - name: Name of the Key Vault instance
-//
-// Note: This parameter is required even if useTargetAzureKeyVault is set to false.
-// When useTargetAzureKeyVault=false, secrets will be output directly instead
-// of being stored in Key Vault.
-//
-// Example:
-// param keyVault = {
-//   subscriptionId: 'd2e7f84f-2790-4baa-9520-59ae8169ed0d'
-//   resourceGroupName: 'rg-ai-hub-gateway-prod'
-//   name: 'kv-aihub-prod-001'
-// }
-// ============================================================================
-param keyVault = {
-  subscriptionId: '00000000-0000-0000-0000-000000000000' // Replace with your subscription ID
-  resourceGroupName: 'rg-keyvault-resource-group'         // Replace with your Key Vault resource group
-  name: 'kv-instance-name'                                // Replace with your Key Vault name
 }
 
 // ============================================================================
@@ -81,7 +52,36 @@ param keyVault = {
 //
 // Default: true
 // ============================================================================
-param useTargetAzureKeyVault = true
+param useTargetAzureKeyVault = false
+
+// ============================================================================
+// OPTIONAL: Azure Key Vault Configuration (required if useTargetAzureKeyVault=true)
+// ============================================================================
+// Specifies the target Key Vault for storing endpoint URLs and API keys.
+// This Key Vault will store the generated APIM gateway endpoints and 
+// subscription keys for secure access by applications.
+//
+// Properties:
+// - subscriptionId: Azure subscription ID where Key Vault is deployed
+// - resourceGroupName: Resource group containing the Key Vault
+// - name: Name of the Key Vault instance
+//
+// Note: This parameter is required even if useTargetAzureKeyVault is set to false.
+// When useTargetAzureKeyVault=false, secrets will be output directly instead
+// of being stored in Key Vault.
+//
+// Example:
+// param keyVault = {
+//   subscriptionId: 'd287984f-2790-4baa-9520-59ae8169ed0d'
+//   resourceGroupName: 'rg-ai-hub-gateway-prod'
+//   name: 'kv-aihub-prod-001'
+// }
+// ============================================================================
+param keyVault = {
+  subscriptionId: '00000000-0000-0000-0000-000000000000' // Replace with your subscription ID
+  resourceGroupName: 'rg-keyvault-resource-group'         // Replace with your Key Vault resource group
+  name: 'kv-instance-name'                                // Replace with your Key Vault name
+}
 
 // ============================================================================
 // REQUIRED: Use Case Identification
@@ -141,7 +141,7 @@ param useCase = {
 // Example:
 // param apiNameMapping = {
 //   OAI: [
-//     'azure-openai-service-api',
+//     'azure-openai-api',
 //     'universal-llm-api'
 //   ]
 //   DOC: [
@@ -156,7 +156,7 @@ param useCase = {
 // ============================================================================
 param apiNameMapping = {
   OAI: [
-    'azure-openai-service-api' // Replace with your actual API ID(s) on APIM
+    'azure-openai-api' // Replace with your actual API ID(s) on APIM
   ]
   // Add more service codes and API mappings as needed
   // DOC: ['document-intelligence-api']
