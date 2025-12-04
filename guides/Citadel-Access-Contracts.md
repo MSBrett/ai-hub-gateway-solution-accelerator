@@ -1,4 +1,4 @@
-# 🚀 AI Citadel Access Contracts (Automation)
+# 🚀 AI Citadel Access Contracts
 
 Part of operating AI Hub Gateway as central AI governance, security and observability, you need to add use-cases and on-board teams to avail access to approved AI services.
 

@@ -17,10 +17,13 @@ param vNetLocation string
 param privateEndpointSubnetName string
 param openAiDnsZoneName string
 
-// Use existing network/dns zone
-param dnsZoneRG string
-param dnsSubscriptionId string
+// Use existing network/dns zone - Legacy parameters (used when dnsZoneResourceId is not provided)
+param dnsZoneRG string = ''
+param dnsSubscriptionId string = ''
 param vNetRG string
+
+// New parameter: Direct DNS zone resource ID (preferred over dnsZoneRG/dnsSubscriptionId)
+param dnsZoneResourceId string = ''
 resource vnet 'Microsoft.Network/virtualNetworks@2022-01-01' existing = {
   name: vNetName
   scope: resourceGroup(vNetRG)
@@ -83,6 +86,7 @@ module privateEndpoint '../networking/private-endpoint.bicep' = {
     privateEndpointSubnetId: subnet.id
     dnsZoneRG: dnsZoneRG
     dnsSubId: dnsSubscriptionId
+    dnsZoneResourceId: dnsZoneResourceId
     tags: tags
   }
   dependsOn: [

@@ -45,11 +45,14 @@ param apimSubnetId string
 
 param apimV2PrivateDnsZoneName string = 'privatelink.azure-api.net'
 param apimV2PrivateEndpointName string
-param dnsZoneRG string = resourceGroup().name
-param dnsSubscriptionId string = subscription().subscriptionId
+param dnsZoneRG string = ''
+param dnsSubscriptionId string = ''
 param privateEndpointSubnetId string
 param usePrivateEndpoint bool = false
 param apimV2PublicNetworkAccess bool = true
+
+// New parameter: Direct DNS zone resource ID (preferred over dnsZoneRG/dnsSubscriptionId)
+param dnsZoneResourceId string = ''
 
 // API Center Integration
 param apiCenterServiceName string
@@ -180,6 +183,7 @@ module privateEndpoint '../networking/private-endpoint.bicep' = if (isV2SKU && u
     dnsZoneRG: dnsZoneRG
     privateEndpointSubnetId: privateEndpointSubnetId
     dnsSubId: dnsSubscriptionId
+    dnsZoneResourceId: dnsZoneResourceId
   }
 }
 

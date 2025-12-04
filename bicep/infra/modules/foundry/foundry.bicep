@@ -85,11 +85,14 @@ param aiFoundryPrivateEndpointBaseName string = ''
 @description('DNS zone name for AI Services private endpoint')
 param aiServicesDnsZoneName string = 'privatelink.services.ai.azure.com'
 
-@description('Resource group containing the DNS zones')
-param dnsZoneRG string
+@description('Resource group containing the DNS zones (legacy - used when dnsZoneResourceId is not provided)')
+param dnsZoneRG string = ''
 
-@description('Subscription ID containing the DNS zones')
-param dnsSubscriptionId string
+@description('Subscription ID containing the DNS zones (legacy - used when dnsZoneResourceId is not provided)')
+param dnsSubscriptionId string = ''
+
+@description('Direct DNS zone resource ID for AI Services (preferred over dnsZoneRG/dnsSubscriptionId)')
+param dnsZoneResourceId string = ''
 
 // ------------------
 //    VARIABLES
@@ -236,6 +239,7 @@ module privateEndpoints '../networking/private-endpoint.bicep' = [for (config, i
     privateEndpointSubnetId: subnet.id
     dnsZoneRG: dnsZoneRG
     dnsSubId: dnsSubscriptionId
+    dnsZoneResourceId: dnsZoneResourceId
     tags: tags
   }
   dependsOn: [

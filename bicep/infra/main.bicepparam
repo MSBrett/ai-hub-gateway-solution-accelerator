@@ -65,9 +65,27 @@ param apimSubnetPrefix = readEnvironmentVariable('APIM_SUBNET_PREFIX', '10.170.0
 param privateEndpointSubnetPrefix = readEnvironmentVariable('PRIVATE_ENDPOINT_SUBNET_PREFIX', '10.170.0.64/26')
 param functionAppSubnetPrefix = readEnvironmentVariable('FUNCTION_APP_SUBNET_PREFIX', '10.170.0.128/26')
 
-// DNS Zone parameters
+// DNS Zone parameters (legacy approach - single subscription/RG)
 param dnsZoneRG = readEnvironmentVariable('DNS_ZONE_RG', '')
 param dnsSubscriptionId = readEnvironmentVariable('DNS_SUBSCRIPTION_ID', '')
+
+// Existing Private DNS Zones (BYO approach - specify resource IDs per DNS zone type)
+// Use this when you have existing Private DNS Zones in different subscriptions/resource groups
+// Leave empty strings to use the legacy dnsZoneRG/dnsSubscriptionId approach
+param existingPrivateDnsZones = {
+  openai: readEnvironmentVariable('EXISTING_DNS_ZONE_OPENAI', '')              // privatelink.openai.azure.com
+  keyVault: readEnvironmentVariable('EXISTING_DNS_ZONE_KEYVAULT', '')          // privatelink.vaultcore.azure.net
+  monitor: readEnvironmentVariable('EXISTING_DNS_ZONE_MONITOR', '')            // privatelink.monitor.azure.com
+  eventHub: readEnvironmentVariable('EXISTING_DNS_ZONE_EVENTHUB', '')          // privatelink.servicebus.windows.net
+  cosmosDb: readEnvironmentVariable('EXISTING_DNS_ZONE_COSMOSDB', '')          // privatelink.documents.azure.com
+  storageBlob: readEnvironmentVariable('EXISTING_DNS_ZONE_STORAGE_BLOB', '')   // privatelink.blob.core.windows.net
+  storageFile: readEnvironmentVariable('EXISTING_DNS_ZONE_STORAGE_FILE', '')   // privatelink.file.core.windows.net
+  storageTable: readEnvironmentVariable('EXISTING_DNS_ZONE_STORAGE_TABLE', '') // privatelink.table.core.windows.net
+  storageQueue: readEnvironmentVariable('EXISTING_DNS_ZONE_STORAGE_QUEUE', '') // privatelink.queue.core.windows.net
+  cognitiveServices: readEnvironmentVariable('EXISTING_DNS_ZONE_COGNITIVE', '') // privatelink.cognitiveservices.azure.com
+  apimGateway: readEnvironmentVariable('EXISTING_DNS_ZONE_APIM', '')           // privatelink.azure-api.net
+  aiServices: readEnvironmentVariable('EXISTING_DNS_ZONE_AI_SERVICES', '')     // privatelink.services.azure.com
+}
 
 // Private Endpoint names
 param storageBlobPrivateEndpointName = readEnvironmentVariable('STORAGE_BLOB_PE_NAME', '')

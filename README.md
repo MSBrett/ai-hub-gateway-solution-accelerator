@@ -311,13 +311,12 @@ The central governance layer with unified AI Gateway that all AI workloads route
 |-----------|---------|---------------------|
 | **🚪 API Management** | Unified AI gateway | LLM governance, AI resiliency, AI registry gateway |
 | **📘 API Center** | Universal AI Registry | Discovery of available AI tools, agents and AI services |
-| **🔍 Microsoft Foundry** | Platform Observability | Platform AI Evaluations & Compliance reports |
+| **🔍 Microsoft Foundry** | Platform Models/Observability | Platform LLMs & AI Evaluations |
 | **📊 Log Analytics** | Logs, metrics & audits | Scalable enterprise telemetry ingestion and storage |
 | **📊 Application Insights** | Platform monitoring | Performance dashboards, automated alerts |
 | **📨 Event Hub** | Usage data streaming | Real-time usage streaming, custom logging |
 | **🗄️ Cosmos DB** | Usage analytics | Long-term storage of usage, automatic scaling |
 | **⚡ Logic App** | Event processing | Workflow-based processing of usage/logs & AI Eval |
-| **🔐 Managed Identity** | Zero-credential auth | Secure service-to-service communication |
 | **🔗 Virtual Network** | Private connectivity | BYO-VNET support, private endpoints |
 
 #### Security & Compliance
@@ -326,6 +325,7 @@ AI Gateway security & compliance enforcements components:
 
 | Component | Purpose |Enterprise Features |
 |---------|---------|---------------------|
+| **🔐 Managed Identity** | Zero-credential auth | Secure service-to-service communication |
 | **🛡️ Content Safety** | LLM protection | Prompt Shield and Content Safety protections |
 | **💳 Language Service** | PII detection | Natural language and RegEx based PII entity detection with anonymization support |
 
@@ -359,7 +359,7 @@ To govern AI agents through AI Citadel Governance Hub, agents must communicate w
 
 #### Existing agents
 
-Guidance to bring existing agents is through updating endpoint and credentials to access central LLMs, tools and agents through the unified gateway.
+Guidance to bring existing agents is through updating endpoint and credentials to access central LLMs, tools and agents through the **unified gateway**.
 
 Recommendation is to use Azure Key Vault to store these information due to its sensitivity when the agent is running on Azure.
 
@@ -383,7 +383,7 @@ Building new agents is accelerated through the **Citadel Agent Spoke** landing z
 | **📦 Azure Container Apps** | Serverless container hosting for custom-built agents with auto-scaling and simplified deployment |
 | **🔍 Azure AI Search** | Vector and hybrid search for RAG patterns and document indexing |
 | **🗄️ Azure Cosmos DB** | Distributed NoSQL database for agent state, threads, and multi-agent coordination |
-| **💾 Azure Storage** | Blob storage for AI Foundry datasets, agent assets, and shared files |
+| **💾 Azure Storage** | Blob storage for Logic App, AI Foundry datasets, agent assets, and shared files |
 | **🔐 Azure Key Vault** | Secure secrets, keys, and certificates with automated rotation |
 | **📊 Application Insights** | Detailed monitoring, diagnostics, and alerts integrated with platform-level observability |
 | **🔒 Virtual Network** | Private connectivity with subnets for compute, agents, data, and management |
@@ -447,23 +447,19 @@ Deploy your Citadel Governance Hub in minutes with Azure Developer CLI:
 ```bash
 # Authenticate and setup environment
 azd auth login
-azd env new citadel-governance-hub-nonprod
+
+# in a new folder, initialize the template (i.e. folder name: ai-hub-citadel-dev)
+azd init --template Azure-Samples/ai-hub-gateway-solution-accelerator -e ai-hub-citadel-dev --branch citadel-v1
 
 # Deploy Citadel Governance Hub
 azd up
 ```
 
-> 💡 **Tip**: Use Azure Cloud Shell to avoid local setup. Review [main.bicep](./infra/main.bicep) configuration before deployment.
+> 💡 **Tip**: Use Azure Cloud Shell to avoid local setup. Review [main.bicep](./bicep/infra/main.bicep) and [main.bicepparam](./bicep/infra/main.bicepparam) configuration before deployment.
 
 ### ✅ Post-Deployment Validation
 
-Once deployed, access your Citadel AI Gateway through Azure API Management:
-
-**Key Endpoints:**
-- **AI Gateway**: `https://<your-apim>.azure-api.net`
-- **AI Registry**: Azure API Center portal
-- **Monitoring Dashboard**: Application Insights
-- **Usage Analytics**: Power BI Dashboard connected to Cosmos DB (optional)
+After successful deployment, validate your Citadel Governance Hub setup using our interactive notebooks.
 
 ### 🧪 Validation Notebooks
 
@@ -471,32 +467,36 @@ Use the following interactive Jupyter notebooks to validate and configure your C
 
 | Notebook | Description |
 |----------|-------------|
-| [**LLM Backend Onboarding Runner**](./validation/llm-backend-onboarding-runner.ipynb) | Onboard existing LLMs (Microsoft Foundry models, Azure OpenAI, and others) into the AI Gateway. Generates source-controllable parameter files for LLM backends configuration. |
 | [**Citadel Governance Hub Primary Tests**](./validation/citadel-governance-hub-primary-tests.ipynb) | Test governance hub managed models through APIM. Includes Citadel Access Contract creation, API testing, token rate limiting validation, and streaming tests. |
+| [**LLM Backend Onboarding Runner**](./validation/llm-backend-onboarding-runner.ipynb) | Onboard existing LLMs (Microsoft Foundry models, Azure OpenAI, and others) into the AI Gateway. Generates source-controllable parameter files for LLM backends configuration. |
 
-> 💡 **Tip**: These notebooks require Python with the `openai`, `requests`, and `matplotlib` among other packages. Ensure you have configured your environment variables before running.
+> 💡 **Tip**: These notebooks require Python with the `openai`, `requests`, and `matplotlib` among other packages highlighted in [requirements.txt](./validation/requirements.txt). Ensure you have configured your environment variables before running.
 
 ---
 
 ## 📚 Comprehensive Documentation
 
-Master Citadel implementation and operations with our detailed guides:
+Master AI Citadel Governance Hub implementation and operations with our detailed guides:
 
-### 🏗️ **Architecture & Deployment**
+### 🏗️ **Landing zone deployment**
 
 | Guide | Description |
 |-------|-------------|
-| [**🆕 Quick Deployment Guide**](./guides/quick-deployment-guide.md) | **Fast deployment for non-production environments** |
-| [**🆕 Full Deployment Guide**](./guides/full-deployment-guide.md) | **Comprehensive guide for dev, staging, and production** |
-| [Parameters Deployment Guide](./guides/parameters-deployment-guide.md) | Comprehensive Bicep parameter file usage |
-| [Enterprise Provisioning](./guides/enterprise-provisioning.md) | Branch-based deployment, CI/CD automation |
+| [**🆕 Quick Deployment Guide**](./guides/quick-deployment-guide.md) | Fast deployment for non-production environments |
+| [**🆕 Full Deployment Guide**](./guides/full-deployment-guide.md) | Comprehensive guide for dev, staging, and production |
+| [**🆕 Parameters Deployment Guide**](./guides/parameters-usage-guide.md) | Comprehensive Bicep parameter file usage |
 
 ### 🔧 **AI Service Integration**
 
 | Guide | Description |
 |-------|-------------|
-| [LLM-Backend-Onboarding](./guides/LLM-Backend-Onboarding.md) | Add Azure OpenAI instances and models (including Realtime API) |
-| [**🆕 LLM Backend Onboarding Guide**](./guides/LLM-Backend-Onboarding-Guide.md) | **Independent LLM backend routing deployment with load balancing and failover** |
+| [**🆕 LLM Backend Onboarding Guide**](./guides/LLM-Backend-Onboarding-Guide.md) | Independent LLM backend routing deployment with load balancing and failover |
+
+### 🔧 **Use-case Onboarding**
+
+| Guide | Description |
+|-------|-------------|
+| [**🆕 AI Citadel Access Contracts Guide**](./guides/citadel-access-contracts.md) | Guide on integrating new/existing AI apps & agents with AI Citadel Governance Hub |
 
 ### 🛡️ **Security & Compliance**
 
@@ -504,7 +504,6 @@ Master Citadel implementation and operations with our detailed guides:
 |-------|-------------|
 | [PII Detection & Masking](./guides/pii-masking-apim.md) | Automated sensitive data protection |
 | [Entra ID Authentication](./guides/entraid-auth-validation.md) | JWT validation and Zero Trust implementation |
-| [Citadel Access Contracts](./guides/Citadel-Access-Contracts.md) | AI Access & Publish Contract specifications |
 
 ### 📊 **Observability & Analytics**
 
@@ -513,6 +512,12 @@ Master Citadel implementation and operations with our detailed guides:
 | [Power BI Dashboard](./guides/power-bi-dashboard.md) | Usage analytics and cost allocation dashboards |
 | [Throttling Events Monitoring](./guides/throttling-events-handling.md) | Real-time 429 error tracking with alerts |
 | [Dynamic Throttling Assignment](./guides/dynamic-throttling-assignment.md) | Intelligent load balancing for PTU models |
+
+### 🏗️ **Architecture & configurations**
+
+| Guide | Description |
+|-------|-------------|
+| [**🆕 LLM Routing Architecture**](./guides/llm-routing-architecture.md) | Technical dive into LLM model and backend routing logic |
 
 ### ⚙️ **Advanced Capabilities**
 
