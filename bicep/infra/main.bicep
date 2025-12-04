@@ -164,9 +164,6 @@ param cosmosDbPrivateEndpointName string = ''
 @description('Event Hub private endpoint name. Leave blank to use default naming conventions.')
 param eventHubPrivateEndpointName string = ''
 
-@description('Azure OpenAI private endpoint name. Leave blank to use default naming conventions.')
-param openAiPrivateEndpointName string = ''
-
 @description('Name of the Azure Language service private endpoint. Leave blank to use default naming conventions.')
 param languageServicePrivateEndpointName string = ''
 

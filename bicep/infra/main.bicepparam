@@ -76,7 +76,6 @@ param storageTablePrivateEndpointName = readEnvironmentVariable('STORAGE_TABLE_P
 param storageQueuePrivateEndpointName = readEnvironmentVariable('STORAGE_QUEUE_PE_NAME', '')
 param cosmosDbPrivateEndpointName = readEnvironmentVariable('COSMOS_DB_PE_NAME', '')
 param eventHubPrivateEndpointName = readEnvironmentVariable('EVENTHUB_PE_NAME', '')
-param openAiPrivateEndpointName = readEnvironmentVariable('OPENAI_PE_NAME', '')
 param languageServicePrivateEndpointName = readEnvironmentVariable('LANGUAGE_SERVICE_PE_NAME', '')
 param aiContentSafetyPrivateEndpointName = readEnvironmentVariable('AI_CONTENT_SAFETY_PE_NAME', '')
 param apimV2PrivateEndpointName = readEnvironmentVariable('APIM_V2_PE_NAME', '')

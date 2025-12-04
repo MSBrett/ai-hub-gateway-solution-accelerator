@@ -291,10 +291,9 @@ The notebook validates:
 
 ## Related Documentation
 
+- [LLM Routing Architecture](llm-routing-architecture.md)
 - [Full Deployment Guide](full-deployment-guide.md)
 - [Citadel Access Contracts](Citadel-Access-Contracts.md)
-- [Parameters Usage Guide](parameters-usage-guide.md)
-- [Power BI Dashboard](power-bi-dashboard.md)
 
 ## File Structure
 

@@ -9,7 +9,7 @@ Automate onboarding of a new use case to your existing APIM-based AI Gateway usi
 What this delivers
 - 📦 Per-service APIM Product named `<serviceCode>-<BU>-<UseCase>-<ENV>`
 - 🧩 Adds chosen APIs to the product and applies a default or custom policy
-- 🔑 Creates a Subscription `<product>-SUB-01` and captures its primary key
+- 🔑 Creates a Subscription `<productName>-SUB-01` and captures its primary key
 - 🔐 Writes endpoint URL + subscription primary key to your target Key Vault
 - 🧪 Optional: Wire your app/Container Apps env vars to these Key Vault secrets
 
