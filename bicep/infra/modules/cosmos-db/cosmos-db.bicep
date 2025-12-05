@@ -93,9 +93,12 @@ param privateEndpointSubnetName string
 param cosmosDnsZoneName string
 param publicAccess string = 'Disabled'
 
-// Use existing network/dns zone
-param dnsZoneRG string
-param dnsSubscriptionId string
+// Use existing network/dns zone - Legacy parameters (used when dnsZoneResourceId is not provided)
+param dnsZoneRG string = ''
+param dnsSubscriptionId string = ''
+
+// New parameter: Direct DNS zone resource ID (preferred over dnsZoneRG/dnsSubscriptionId)
+param dnsZoneResourceId string = ''
 
 param vNetRG string
 resource vnet 'Microsoft.Network/virtualNetworks@2022-01-01' existing = {
@@ -262,6 +265,7 @@ module privateEndpoint '../networking/private-endpoint.bicep' = {
     dnsZoneRG: dnsZoneRG
     privateEndpointSubnetId: subnet.id
     dnsSubId: dnsSubscriptionId
+    dnsZoneResourceId: dnsZoneResourceId
     tags: tags
   }
 }

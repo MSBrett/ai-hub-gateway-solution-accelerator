@@ -64,11 +64,53 @@ param resourceToken string = uniqueString(subscription().id, resourceGroup().id)
 param tags object = {}
 
 // ------------------
+//    NETWORKING PARAMETERS
+// ------------------
+
+@description('Name of the Virtual Network')
+param vNetName string
+
+@description('Location of the Virtual Network')
+param vNetLocation string
+
+@description('Name of the private endpoint subnet')
+param privateEndpointSubnetName string
+
+@description('Resource group containing the Virtual Network')
+param vNetRG string
+
+@description('Base name for AI Foundry private endpoints. Leave blank to use default naming.')
+param aiFoundryPrivateEndpointBaseName string = ''
+
+@description('DNS zone name for AI Services private endpoint')
+param aiServicesDnsZoneName string = 'privatelink.services.ai.azure.com'
+
+@description('Resource group containing the DNS zones (legacy - used when dnsZoneResourceId is not provided)')
+param dnsZoneRG string = ''
+
+@description('Subscription ID containing the DNS zones (legacy - used when dnsZoneResourceId is not provided)')
+param dnsSubscriptionId string = ''
+
+@description('Direct DNS zone resource ID for AI Services (preferred over dnsZoneRG/dnsSubscriptionId)')
+param dnsZoneResourceId string = ''
+
+// ------------------
 //    VARIABLES
 // ------------------
 
 var azureRoles = loadJsonContent('../azure-roles.json')
 var cognitiveServicesUserRoleDefinitionID = resourceId('Microsoft.Authorization/roleDefinitions', azureRoles.CognitiveServicesUser)
+
+// Get existing VNet and subnet for private endpoint
+resource vnet 'Microsoft.Network/virtualNetworks@2022-01-01' existing = {
+  name: vNetName
+  scope: resourceGroup(vNetRG)
+}
+
+resource subnet 'Microsoft.Network/virtualNetworks/subnets@2022-01-01' existing = {
+  name: privateEndpointSubnetName
+  parent: vnet
+}
 
 
 // ------------------
@@ -88,12 +130,16 @@ resource foundryResources 'Microsoft.CognitiveServices/accounts@2025-06-01' = [f
   properties: {
     // required to work in AI Foundry
     allowProjectManagement: true 
-//!empty(languageServiceName) ? languageServiceName : '${abbrs.cognitiveServicesAccounts}language-${resourceToken}'
     customSubDomainName: toLower(!empty(config.customSubDomainName) ? config.customSubDomainName : (!empty(config.name) ? config.name : 'aif-${resourceToken}-${i}'))
 
     disableLocalAuth: disableKeyAuth
 
     publicNetworkAccess: publicNetworkAccess
+    networkAcls: {
+      defaultAction: 'Deny'
+      ipRules: []
+      virtualNetworkRules: []
+    }
   }  
 }]
 
@@ -177,6 +223,28 @@ module modelDeployments 'deployments.bicep' = [for (config, i) in aiServicesConf
     cognitiveServiceName: foundryResources[i].name
     modelsConfig: filter(modelsConfig, model => !contains(model, 'aiservice') || model.aiservice == foundryResources[i].name )
   }
+}]
+
+// Private endpoints for AI Foundry instances
+module privateEndpoints '../networking/private-endpoint.bicep' = [for (config, i) in aiServicesConfig: {
+  name: 'pe-${foundryResources[i].name}'
+  params: {
+    name: !empty(aiFoundryPrivateEndpointBaseName) ? '${aiFoundryPrivateEndpointBaseName}-${i}' : '${foundryResources[i].name}-pe'
+    privateLinkServiceId: foundryResources[i].id
+    groupIds: [
+      'account'
+    ]
+    dnsZoneName: aiServicesDnsZoneName
+    location: vNetLocation
+    privateEndpointSubnetId: subnet.id
+    dnsZoneRG: dnsZoneRG
+    dnsSubId: dnsSubscriptionId
+    dnsZoneResourceId: dnsZoneResourceId
+    tags: tags
+  }
+  dependsOn: [
+    modelDeployments
+  ]
 }]
 
 

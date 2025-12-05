@@ -139,11 +139,28 @@ param privateEndpointSubnetPrefix string = '10.170.0.64/26'
 param functionAppSubnetPrefix string = '10.170.0.128/26'
 
 // DNS ZONE PARAMETERS - DNS zone configuration for private endpoints (for use with existing VNet)
-@description('Resource group containing the DNS zones (only used with existing VNet).')
+@description('Resource group containing the DNS zones (only used with existing VNet when existingPrivateDnsZones is not provided - LEGACY).')
 param dnsZoneRG string = ''
 
-@description('Subscription ID containing the DNS zones (only used with existing VNet).')
+@description('Subscription ID containing the DNS zones (only used with existing VNet when existingPrivateDnsZones is not provided - LEGACY).')
 param dnsSubscriptionId string = ''
+
+@description('Existing Private DNS Zone resource IDs for BYO network scenarios. Each property should contain the full resource ID of the DNS zone. When provided, these take precedence over dnsZoneRG/dnsSubscriptionId.')
+param existingPrivateDnsZones object = {
+  // Example format:
+  // openai: '/subscriptions/{sub-id}/resourceGroups/{rg}/providers/Microsoft.Network/privateDnsZones/privatelink.openai.azure.com'
+  // keyVault: '/subscriptions/{sub-id}/resourceGroups/{rg}/providers/Microsoft.Network/privateDnsZones/privatelink.vaultcore.azure.net'
+  // monitor: '/subscriptions/{sub-id}/resourceGroups/{rg}/providers/Microsoft.Network/privateDnsZones/privatelink.monitor.azure.com'
+  // eventHub: '/subscriptions/{sub-id}/resourceGroups/{rg}/providers/Microsoft.Network/privateDnsZones/privatelink.servicebus.windows.net'
+  // cosmosDb: '/subscriptions/{sub-id}/resourceGroups/{rg}/providers/Microsoft.Network/privateDnsZones/privatelink.documents.azure.com'
+  // storageBlob: '/subscriptions/{sub-id}/resourceGroups/{rg}/providers/Microsoft.Network/privateDnsZones/privatelink.blob.core.windows.net'
+  // storageFile: '/subscriptions/{sub-id}/resourceGroups/{rg}/providers/Microsoft.Network/privateDnsZones/privatelink.file.core.windows.net'
+  // storageTable: '/subscriptions/{sub-id}/resourceGroups/{rg}/providers/Microsoft.Network/privateDnsZones/privatelink.table.core.windows.net'
+  // storageQueue: '/subscriptions/{sub-id}/resourceGroups/{rg}/providers/Microsoft.Network/privateDnsZones/privatelink.queue.core.windows.net'
+  // cognitiveServices: '/subscriptions/{sub-id}/resourceGroups/{rg}/providers/Microsoft.Network/privateDnsZones/privatelink.cognitiveservices.azure.com'
+  // apimGateway: '/subscriptions/{sub-id}/resourceGroups/{rg}/providers/Microsoft.Network/privateDnsZones/privatelink.azure-api.net'
+  // aiServices: '/subscriptions/{sub-id}/resourceGroups/{rg}/providers/Microsoft.Network/privateDnsZones/privatelink.services.ai.azure.com'
+}
 
 // PRIVATE ENDPOINTS - Names for private endpoints for various services
 @description('Storage Blob private endpoint name. Leave blank to use default naming conventions.')
@@ -164,9 +181,6 @@ param cosmosDbPrivateEndpointName string = ''
 @description('Event Hub private endpoint name. Leave blank to use default naming conventions.')
 param eventHubPrivateEndpointName string = ''
 
-@description('Azure OpenAI private endpoint name. Leave blank to use default naming conventions.')
-param openAiPrivateEndpointName string = ''
-
 @description('Name of the Azure Language service private endpoint. Leave blank to use default naming conventions.')
 param languageServicePrivateEndpointName string = ''
 
@@ -175,6 +189,9 @@ param aiContentSafetyPrivateEndpointName string = ''
 
 @description('API Management V2 private endpoint name. Leave blank to use default naming conventions.')
 param apimV2PrivateEndpointName string = ''
+
+@description('AI Foundry private endpoint base name. Leave blank to use default naming conventions.')
+param aiFoundryPrivateEndpointName string = ''
 
 // Services network access configuration
 
@@ -203,6 +220,10 @@ param languageServiceExternalNetworkAccess string = 'Disabled'
 @description('Azure Content Safety external network access.')
 @allowed([ 'Enabled', 'Disabled' ])
 param aiContentSafetyExternalNetworkAccess string = 'Disabled'
+
+@description('AI Foundry external network access.')
+@allowed([ 'Enabled', 'Disabled' ])
+param aiFoundryExternalNetworkAccess string = 'Disabled'
 
 @description('Use Azure Monitor Private Link Scope for Log Analytics and Application Insights.')
 param useAzureMonitorPrivateLinkScope bool = false
@@ -272,6 +293,10 @@ param apicSku string = 'Free'
 
 @description('Name of the Storage Account file share for Logic App content.')
 param logicContentShareName string = 'usage-logic-content'
+
+//
+// Governance Hub AI Backends
+//
 
 @description('AI Search instances configuration - add more instances by adding to this array.')
 param aiSearchInstances array = [
@@ -458,6 +483,24 @@ var aiCogntiveServicesDnsZoneName = 'privatelink.cognitiveservices.azure.com'
 var apimV2SkuDnsZoneName = 'privatelink.azure-api.net'
 var aiServicesDnsZoneName = 'privatelink.services.ai.azure.com'
 
+// Extract existing DNS zone resource IDs from the parameter (for BYO network scenarios)
+// These are used when useExistingVnet is true and existingPrivateDnsZones is provided
+var existingKeyVaultDnsZoneId = existingPrivateDnsZones.?keyVault ?? ''
+var existingMonitorDnsZoneId = existingPrivateDnsZones.?monitor ?? ''
+var existingEventHubDnsZoneId = existingPrivateDnsZones.?eventHub ?? ''
+var existingCosmosDbDnsZoneId = existingPrivateDnsZones.?cosmosDb ?? ''
+var existingStorageBlobDnsZoneId = existingPrivateDnsZones.?storageBlob ?? ''
+var existingStorageFileDnsZoneId = existingPrivateDnsZones.?storageFile ?? ''
+var existingStorageTableDnsZoneId = existingPrivateDnsZones.?storageTable ?? ''
+var existingStorageQueueDnsZoneId = existingPrivateDnsZones.?storageQueue ?? ''
+var existingCognitiveServicesDnsZoneId = existingPrivateDnsZones.?cognitiveServices ?? ''
+var existingApimGatewayDnsZoneId = existingPrivateDnsZones.?apimGateway ?? ''
+var existingAiServicesDnsZoneId = existingPrivateDnsZones.?aiServices ?? ''
+
+// Determine if we're using explicit DNS zone resource IDs (new approach) vs legacy RG/Subscription lookup
+#disable-next-line no-unused-vars
+var useExplicitDnsZoneIds = !empty(existingCosmosDbDnsZoneId) || !empty(existingEventHubDnsZoneId) || !empty(existingStorageBlobDnsZoneId)
+
 // Base DNS zones (always included)
 var baseDnsZoneNames = [
   openAiPrivateDnsZoneName
@@ -578,6 +621,7 @@ module monitoring './modules/monitor/monitoring.bicep' = {
     createDashboard: createAppInsightsDashboards
     dnsZoneRG: !useExistingVnet ? resourceGroup.name : dnsZoneRG
     dnsSubscriptionId: !empty(dnsSubscriptionId) ? dnsSubscriptionId : subscription().subscriptionId
+    dnsZoneResourceId: existingMonitorDnsZoneId
     usePrivateLinkScope: useAzureMonitorPrivateLinkScope
   }
 }
@@ -603,6 +647,7 @@ module contentSafety 'modules/ai/cognitiveservices.bicep' = {
     vNetRG: useExistingVnet ? vnetExisting.outputs.vnetRG : vnet.outputs.vnetRG
     dnsZoneRG: !useExistingVnet ? resourceGroup.name : dnsZoneRG
     dnsSubscriptionId: !empty(dnsSubscriptionId) ? dnsSubscriptionId : subscription().subscriptionId
+    dnsZoneResourceId: existingCognitiveServicesDnsZoneId
   }
 }
 
@@ -627,6 +672,7 @@ module languageService 'modules/ai/cognitiveservices.bicep' = {
     vNetRG: useExistingVnet ? vnetExisting.outputs.vnetRG : vnet.outputs.vnetRG
     dnsZoneRG: !useExistingVnet ? resourceGroup.name : dnsZoneRG
     dnsSubscriptionId: !empty(dnsSubscriptionId) ? dnsSubscriptionId : subscription().subscriptionId
+    dnsZoneResourceId: existingCognitiveServicesDnsZoneId
   }
 }
 
@@ -641,10 +687,20 @@ module foundry 'modules/foundry/foundry.bicep' = if(enableAIFoundry) {
     foundryProjectName: 'citadel-governance-project'
     appInsightsInstrumentationKey: monitoring.outputs.foundryApplicationInsightsInstrumentationKey
     appInsightsId: monitoring.outputs.foundryApplicationInsightsId
-    publicNetworkAccess: 'Enabled'
+    publicNetworkAccess: aiFoundryExternalNetworkAccess
     disableKeyAuth: false
     resourceToken: resourceToken
     tags: tags
+    // Networking parameters for private endpoints
+    vNetName: useExistingVnet ? vnetExisting.outputs.vnetName : vnet.outputs.vnetName
+    vNetLocation: useExistingVnet ? vnetExisting.outputs.location : vnet.outputs.location
+    vNetRG: useExistingVnet ? vnetExisting.outputs.vnetRG : vnet.outputs.vnetRG
+    privateEndpointSubnetName: useExistingVnet ? vnetExisting.outputs.privateEndpointSubnetName : vnet.outputs.privateEndpointSubnetName
+    aiFoundryPrivateEndpointBaseName: !empty(aiFoundryPrivateEndpointName) ? aiFoundryPrivateEndpointName : '${abbrs.cognitiveServicesAccounts}foundry-pe-${resourceToken}'
+    aiServicesDnsZoneName: aiServicesDnsZoneName
+    dnsZoneRG: !useExistingVnet ? resourceGroup.name : dnsZoneRG
+    dnsSubscriptionId: !empty(dnsSubscriptionId) ? dnsSubscriptionId : subscription().subscriptionId
+    dnsZoneResourceId: existingAiServicesDnsZoneId
   }
 }
 
@@ -663,6 +719,7 @@ module eventHub './modules/event-hub/event-hub.bicep' = {
     vNetRG: useExistingVnet ? vnetExisting.outputs.vnetRG : vnet.outputs.vnetRG
     dnsZoneRG: !useExistingVnet ? resourceGroup.name : dnsZoneRG
     dnsSubscriptionId: !empty(dnsSubscriptionId) ? dnsSubscriptionId : subscription().subscriptionId
+    dnsZoneResourceId: existingEventHubDnsZoneId
     capacity: eventHubCapacityUnits
   }
 }
@@ -703,6 +760,7 @@ module apim './modules/apim/apim.bicep' = {
     privateEndpointSubnetId: useExistingVnet ? vnetExisting.outputs.privateEndpointSubnetId : vnet.outputs.privateEndpointSubnetId
     dnsZoneRG: !useExistingVnet ? resourceGroup.name : dnsZoneRG
     dnsSubscriptionId: !empty(dnsSubscriptionId) ? dnsSubscriptionId : subscription().subscriptionId
+    dnsZoneResourceId: existingApimGatewayDnsZoneId
     isMCPSampleDeployed: true
     apiCenterServiceName: apiCenter.outputs.name
     apiCenterWorkspaceName: apiCenter.outputs.defaultWorkspaceName
@@ -724,6 +782,7 @@ module cosmosDb './modules/cosmos-db/cosmos-db.bicep' = {
     vNetRG: useExistingVnet ? vnetExisting.outputs.vnetRG : vnet.outputs.vnetRG
     dnsZoneRG: !useExistingVnet ? resourceGroup.name : dnsZoneRG
     dnsSubscriptionId: !empty(dnsSubscriptionId) ? dnsSubscriptionId : subscription().subscriptionId
+    dnsZoneResourceId: existingCosmosDbDnsZoneId
     throughput: cosmosDbRUs
     publicAccess: cosmosDbPublicAccess
   }
@@ -751,6 +810,10 @@ module storageAccount './modules/functionapp/storageaccount.bicep' = {
     vNetRG: useExistingVnet ? vnetExisting.outputs.vnetRG : vnet.outputs.vnetRG
     dnsZoneRG: !useExistingVnet ? resourceGroup.name : dnsZoneRG
     dnsSubscriptionId: !empty(dnsSubscriptionId) ? dnsSubscriptionId : subscription().subscriptionId
+    storageBlobDnsZoneResourceId: existingStorageBlobDnsZoneId
+    storageFileDnsZoneResourceId: existingStorageFileDnsZoneId
+    storageTableDnsZoneResourceId: existingStorageTableDnsZoneId
+    storageQueueDnsZoneResourceId: existingStorageQueueDnsZoneId
   }
 }
 

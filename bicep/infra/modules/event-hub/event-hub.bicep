@@ -15,10 +15,13 @@ param privateEndpointSubnetName string
 param eventHubDnsZoneName string
 param publicNetworkAccess string = 'Enabled'
 
-// Use existing network/dns zone
-param dnsZoneRG string
-param dnsSubscriptionId string
+// Use existing network/dns zone - Legacy parameters (used when dnsZoneResourceId is not provided)
+param dnsZoneRG string = ''
+param dnsSubscriptionId string = ''
 param vNetRG string
+
+// New parameter: Direct DNS zone resource ID (preferred over dnsZoneRG/dnsSubscriptionId)
+param dnsZoneResourceId string = ''
 
 // Optional: Network rule sets for additional security
 // param ipRules array = []
@@ -118,6 +121,7 @@ module privateEndpoint '../networking/private-endpoint.bicep' = {
     dnsZoneRG: dnsZoneRG
     privateEndpointSubnetId: subnet.id
     dnsSubId: dnsSubscriptionId
+    dnsZoneResourceId: dnsZoneResourceId
     tags: tags
   }
 }

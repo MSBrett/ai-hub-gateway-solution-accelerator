@@ -88,8 +88,28 @@ param privateEndpointSubnetPrefix = '10.170.0.64/26'
 param functionAppSubnetPrefix = '10.170.0.128/26'
 
 // DNS Zone Configuration (for existing VNet scenarios)
+// Legacy approach - single subscription/RG for all DNS zones
 param dnsZoneRG = ''
 param dnsSubscriptionId = ''
+
+// Existing Private DNS Zones (BYO approach - specify resource IDs per DNS zone type)
+// Use this when you have existing Private DNS Zones in different subscriptions/resource groups
+// Leave empty strings to use the legacy dnsZoneRG/dnsSubscriptionId approach
+// Format: /subscriptions/{sub-id}/resourceGroups/{rg-name}/providers/Microsoft.Network/privateDnsZones/{zone-name}
+param existingPrivateDnsZones = {
+  openai: ''              // privatelink.openai.azure.com
+  keyVault: ''            // privatelink.vaultcore.azure.net
+  monitor: ''             // privatelink.monitor.azure.com
+  eventHub: ''            // privatelink.servicebus.windows.net
+  cosmosDb: ''            // privatelink.documents.azure.com
+  storageBlob: ''         // privatelink.blob.core.windows.net
+  storageFile: ''         // privatelink.file.core.windows.net
+  storageTable: ''        // privatelink.table.core.windows.net
+  storageQueue: ''        // privatelink.queue.core.windows.net
+  cognitiveServices: ''   // privatelink.cognitiveservices.azure.com
+  apimGateway: ''         // privatelink.azure-api.net
+  aiServices: ''          // privatelink.services.azure.com
+}
 
 // =============================================================================
 // PRIVATE ENDPOINTS
@@ -101,7 +121,6 @@ param storageTablePrivateEndpointName = ''
 param storageQueuePrivateEndpointName = ''
 param cosmosDbPrivateEndpointName = ''
 param eventHubPrivateEndpointName = ''
-param openAiPrivateEndpointName = ''
 param languageServicePrivateEndpointName = ''
 param aiContentSafetyPrivateEndpointName = ''
 param apimV2PrivateEndpointName = ''

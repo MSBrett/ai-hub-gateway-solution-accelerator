@@ -18,10 +18,16 @@ param storageQueuePrivateEndpointName string
 // https://learn.microsoft.com/azure/role-based-access-control/built-in-roles#storage-blob-data-owner
 var storageBlobDataOwnerRoleId = subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'b7e6dc6d-f1e8-4753-8033-0f276bb0955b')
 
-// Use existing network/dns zone
-param dnsZoneRG string
-param dnsSubscriptionId string
+// Use existing network/dns zone - Legacy parameters (used when dnsZoneResourceId is not provided)
+param dnsZoneRG string = ''
+param dnsSubscriptionId string = ''
 param vNetRG string
+
+// New parameters: Direct DNS zone resource IDs (preferred over dnsZoneRG/dnsSubscriptionId)
+param storageBlobDnsZoneResourceId string = ''
+param storageFileDnsZoneResourceId string = ''
+param storageTableDnsZoneResourceId string = ''
+param storageQueueDnsZoneResourceId string = ''
 
 param provisionLogicShare bool = true
 
@@ -100,6 +106,7 @@ module privateEndpointBlob '../networking/private-endpoint.bicep' = {
     dnsZoneRG: dnsZoneRG
     privateEndpointSubnetId: subnet.id
     dnsSubId: dnsSubscriptionId
+    dnsZoneResourceId: storageBlobDnsZoneResourceId
   }
 }
 
@@ -116,6 +123,7 @@ module privateEndpointFile '../networking/private-endpoint.bicep' = {
     dnsZoneRG: dnsZoneRG
     privateEndpointSubnetId: subnet.id
     dnsSubId: dnsSubscriptionId
+    dnsZoneResourceId: storageFileDnsZoneResourceId
   }
 }
 
@@ -132,6 +140,7 @@ module privateEndpointTable '../networking/private-endpoint.bicep' = {
     dnsZoneRG: dnsZoneRG
     privateEndpointSubnetId: subnet.id
     dnsSubId: dnsSubscriptionId
+    dnsZoneResourceId: storageTableDnsZoneResourceId
   }
 }
 
@@ -148,6 +157,7 @@ module privateEndpointQueue '../networking/private-endpoint.bicep' = {
     dnsZoneRG: dnsZoneRG
     privateEndpointSubnetId: subnet.id
     dnsSubId: dnsSubscriptionId
+    dnsZoneResourceId: storageQueueDnsZoneResourceId
   }
 }
 
