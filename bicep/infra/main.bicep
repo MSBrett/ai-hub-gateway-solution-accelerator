@@ -294,6 +294,10 @@ param apicSku string = 'Free'
 @description('Name of the Storage Account file share for Logic App content.')
 param logicContentShareName string = 'usage-logic-content'
 
+//
+// Governance Hub AI Backends
+//
+
 @description('AI Search instances configuration - add more instances by adding to this array.')
 param aiSearchInstances array = [
   // {
@@ -481,7 +485,6 @@ var aiServicesDnsZoneName = 'privatelink.services.ai.azure.com'
 
 // Extract existing DNS zone resource IDs from the parameter (for BYO network scenarios)
 // These are used when useExistingVnet is true and existingPrivateDnsZones is provided
-var existingOpenAiDnsZoneId = existingPrivateDnsZones.?openai ?? ''
 var existingKeyVaultDnsZoneId = existingPrivateDnsZones.?keyVault ?? ''
 var existingMonitorDnsZoneId = existingPrivateDnsZones.?monitor ?? ''
 var existingEventHubDnsZoneId = existingPrivateDnsZones.?eventHub ?? ''
