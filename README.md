@@ -90,7 +90,7 @@ AI Citadel Governance Hub provides automatable agent onboarding configurations t
 | **🚀 Citadel Access Contract** | Govern the required access to LLMs and centrally managed tools and agents |
 | **🤖 Citadel Publish Contract** | Provide the ability to publish agents and tools on AI Citadel Governance Hub |
 | **📘 Citadel AI Registry** | Central catalog for discovering, managing, and reusing AI assets across the enterprise |
-| **🔄 DevOps Integration** | Automate and source control both access and public AI Citadel Contracts |
+| **🔄 DevOps Integration** | Automate and source control both access and publish AI Citadel Contracts |
 
 ---
 
@@ -138,79 +138,15 @@ AI Citadel Governance Hub follows a **hub-spoke architecture** that integrates s
 
 ### Networking approach
 
+Detailed networking approach guidance for Citadel Governance Hub can be found in the [Network Approach Guide](./guides/network-approach.md).
+
+Below is a high-level overview of the two supported deployment approaches:
+
 #### Part of the hub network
 
 In this approach, the Citadel Governance Hub is deployed within the existing hub virtual network (VNet) of your Azure Landing Zone.
 
 This allows for direct communication between the unified AI gateway and connected agentic spokes, leveraging existing security and networking configurations.
-
-```mermaid
-%%{init: {
-  'theme': 'base',
-  'themeVariables': {
-    'primaryColor': '#0078d4',
-    'primaryTextColor': '#fff',
-    'primaryBorderColor': '#0078d4',
-    'lineColor': '#8a8886',
-    'secondaryColor': '#50e6ff',
-    'tertiaryColor': '#f3f2f1',
-    'noteBkgColor': '#fef9e7',
-    'noteTextColor': '#323130',
-    'noteBorderColor': '#d4a300',
-    'actorBkg': '#0078d4',
-    'actorBorder': '#005a9e',
-    'actorTextColor': '#fff',
-    'actorLineColor': '#8a8886',
-    'signalColor': '#323130',
-    'signalTextColor': '#323130',
-    'labelBoxBkgColor': '#e1dfdd',
-    'labelBoxBorderColor': '#605e5c',
-    'labelTextColor': '#323130',
-    'loopTextColor': '#323130',
-    'activationBorderColor': '#0078d4',
-    'activationBkgColor': '#deecf9',
-    'sequenceNumberColor': '#fff'
-  }
-}}%%
-sequenceDiagram
-    autonumber
-    
-    participant Agent as 🤖 Spoke Agent<br/>(Spoke Network)
-    participant Gateway as 🚪 AI Gateway<br/>(Hub Network)
-    participant Backends as ⚡ AI Backends<br/>(Hub/Spoke Network*)
-
-    Note over Agent,Backends: 🔷 Hub-Based Governance Architecture
-    
-    rect rgba(0, 120, 212, 0.1)
-        Note right of Agent: Step 1: Request Initiation
-        Agent->>+Gateway: AI Request with Auth Token
-    end
-    
-    rect rgba(80, 230, 255, 0.1)
-        Note over Gateway: Step 2: Governance & Security Enforcement
-        Gateway->>+Backends: Routed Request to LLM/Agent/Tool
-    end
-    
-    rect rgba(16, 124, 16, 0.1)
-        Note over Backends: Step 3: AI Processing & Response
-        Backends-->>-Gateway: AI Response + Telemetry
-    end
-    
-    rect rgba(147, 51, 234, 0.1)
-        Note over Gateway: Step 4: Response Validation & Logging
-        Gateway-->>-Agent: Governed AI Response
-    end
-    
-    Note over Agent,Backends: ✅ Complete observability with zero agent-side instrumentation
-```
-
->**Note:** When AI Backends reside in a different spoke networks, their traffic should be forced through the hub firewall to maintain integrity of the network traffic flow.*
-
-#### Traffic Flow
-
-- Routed requests originate from spoke-hosted agents.
-- Traffic is directly forwarded to AI Gateway for governance, security, and observability enforcement.
-- Traffic intelligently routed out to managed LLMs, tools, or downstream agents (gateway-spoke-network).
 
 #### Part of spoke network
 
@@ -219,87 +155,6 @@ In this approach, the Citadel Governance Hub is deployed within a dedicated spok
 Agentic workloads in other spokes are routed first to the hub network firewall through direct peering, then forwarded to the Citadel Governance Hub gateway network.
 
 This provides an additional layer of isolation for AI workloads while still enabling secure communication with other enterprise resources in the hub.
-
-```mermaid
-%%{init: {
-  'theme': 'base',
-  'themeVariables': {
-    'primaryColor': '#0078d4',
-    'primaryTextColor': '#fff',
-    'primaryBorderColor': '#0078d4',
-    'lineColor': '#8a8886',
-    'secondaryColor': '#d13438',
-    'tertiaryColor': '#f3f2f1',
-    'noteBkgColor': '#fef9e7',
-    'noteTextColor': '#323130',
-    'noteBorderColor': '#d4a300',
-    'actorBkg': '#0078d4',
-    'actorBorder': '#005a9e',
-    'actorTextColor': '#fff',
-    'actorLineColor': '#8a8886',
-    'signalColor': '#323130',
-    'signalTextColor': '#323130',
-    'labelBoxBkgColor': '#e1dfdd',
-    'labelBoxBorderColor': '#605e5c',
-    'labelTextColor': '#323130',
-    'loopTextColor': '#323130',
-    'activationBorderColor': '#0078d4',
-    'activationBkgColor': '#deecf9',
-    'sequenceNumberColor': '#fff'
-  }
-}}%%
-sequenceDiagram
-    autonumber
-    
-    participant Agent as 🤖 Spoke Agent<br/>(Agent Spoke Network)
-    participant Firewall as 🛡️ Hub Firewall<br/>(Hub Network)
-    participant Gateway as 🚪 AI Gateway<br/>(Gateway Spoke Network)
-    participant Backends as ⚡ AI Backends<br/>(Spoke Network*)
-
-    Note over Agent,Backends: 🔷 Spoke-Based Governance with Firewall Isolation
-    
-    rect rgba(0, 120, 212, 0.1)
-        Note right of Agent: Step 1: Request Initiation
-        Agent->>+Firewall: AI Request via Peering
-    end
-    
-    rect rgba(209, 52, 56, 0.1)
-        Note over Firewall: Step 2: Network Security Inspection
-        Firewall->>+Gateway: Forward Approved Traffic
-    end
-    
-    rect rgba(80, 230, 255, 0.1)
-        Note over Gateway: Step 3: AI Governance Layer
-        Gateway->>+Backends: Governed Request to LLM/Agent/Tool
-    end
-    
-    rect rgba(16, 124, 16, 0.1)
-        Note over Backends: Step 4: AI Processing
-        Backends-->>-Gateway: AI Response + Telemetry
-    end
-    
-    rect rgba(147, 51, 234, 0.1)
-        Note over Gateway: Step 5: Response Validation
-        Gateway-->>-Firewall: Validated Response
-    end
-    
-    rect rgba(209, 52, 56, 0.1)
-        Note over Firewall: Step 6: Egress Inspection
-        Firewall-->>-Agent: Secured AI Response
-    end
-    
-    Note over Agent,Backends: 🔒 Defense-in-depth with dual security layers<br/>✅ Network isolation + AI governance
-```
-
->**Note:** * When AI Backends reside in a different spoke networks, their traffic should be forced through the hub firewall to maintain integrity of the network traffic flow.*
-
-#### Traffic isolation flow
-
-- Routed requests originate from spoke-hosted agents (agent-spoke-network).
-- Traffic first routed to hub network firewall for inspection (hub-network).
-- Hub Firewall forwards to AI Gateway for governance, security, and observability enforcement (gateway-spoke-network).
-- Traffic intelligently routed out to managed LLMs, tools, or downstream agents (through the hub firewall or directly).
-- AI Backend responses may still be routed through the hub firewall for final inspection before reaching spoke agents, depending on governance policy.
 
 ### 🎯 **Citadel Governance Hub** - Central Control Plane
 
@@ -339,7 +194,7 @@ Supported by subscription wide security services:
 
 #### AI Services
 
-Optionally you can deploy one or more generative AI services in the hub:
+Optionally you can deploy one or more generative AI services as part of the Citadel Governance Hub to provide fully functional gateway with LLMs already integrated:
 
 | Component | Purpose | Enterprise Features |
 |---------|---------|---------------------|
@@ -485,6 +340,7 @@ Master AI Citadel Governance Hub implementation and operations with our detailed
 | [**🆕 Quick Deployment Guide**](./guides/quick-deployment-guide.md) | Fast deployment for non-production environments |
 | [**🆕 Full Deployment Guide**](./guides/full-deployment-guide.md) | Comprehensive guide for dev, staging, and production |
 | [**🆕 Parameters Deployment Guide**](./guides/parameters-usage-guide.md) | Comprehensive Bicep parameter file usage |
+| [**🆕 Network Approach Guide**](./guides/network-approach.md) | Detailed networking approach for Citadel Governance Hub deployment |
 
 ### 🔧 **AI Service Integration**
 
@@ -502,16 +358,14 @@ Master AI Citadel Governance Hub implementation and operations with our detailed
 
 | Guide | Description |
 |-------|-------------|
-| [PII Detection & Masking](./guides/pii-masking-apim.md) | Automated sensitive data protection |
-| [Entra ID Authentication](./guides/entraid-auth-validation.md) | JWT validation and Zero Trust implementation |
+| [**🆕 PII Detection & Masking**](./guides/pii-masking-apim.md) | Automated sensitive data protection |
+| [**🆕 Entra ID Authentication**](./guides/entraid-auth-validation.md) | JWT validation and Zero Trust implementation |
 
 ### 📊 **Observability & Analytics**
 
 | Guide | Description |
 |-------|-------------|
 | [Power BI Dashboard](./guides/power-bi-dashboard.md) | Usage analytics and cost allocation dashboards |
-| [Throttling Events Monitoring](./guides/throttling-events-handling.md) | Real-time 429 error tracking with alerts |
-| [Dynamic Throttling Assignment](./guides/dynamic-throttling-assignment.md) | Intelligent load balancing for PTU models |
 
 ### 🏗️ **Architecture & configurations**
 
