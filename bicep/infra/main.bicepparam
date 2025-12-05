@@ -195,6 +195,14 @@ param aiFoundryModelsConfig = [
     aiserviceIndex: 0
   }
   {
+    name: 'text-embedding-3-large'
+    publisher: 'OpenAI'
+    version: '1'
+    sku: 'GlobalStandard'
+    capacity: 100
+    aiserviceIndex: 0
+  }
+  {
     name: 'gpt-5'
     publisher: 'OpenAI'
     version: '2025-08-07'
@@ -208,6 +216,14 @@ param aiFoundryModelsConfig = [
     version: '1'
     sku: 'GlobalStandard'
     capacity: 1
+    aiserviceIndex: 1
+  }
+  {
+    name: 'text-embedding-3-large'
+    publisher: 'OpenAI'
+    version: '1'
+    sku: 'GlobalStandard'
+    capacity: 100
     aiserviceIndex: 1
   }
 ]

@@ -33,20 +33,67 @@ For quick non-production deployments, see the [Quick Deployment Guide](./quick-d
 | **Azure Subscription** | Active subscription with sufficient quota |
 | **Permissions** | Owner or Contributor + User Access Administrator |
 | **Resource Providers** | All required providers registered (see below) |
-| **Service Quotas** | Verified for APIM, Cosmos DB, Event Hub |
+| **Service Quotas** | Verified quotas for LLMs, CosmosDB and other elements |
+
+## Deployment Decisions Checklist
+
+Use the below checklist to plan your deployment configuration:
+
+- [ ] Subscription allocation
+  - [ ] New subscription
+  - [ ] Existing subscription
+- [ ] Target Azure Region(s)
+  - [ ] Primary Region (for core governance components)
+  - [ ] Regions for Foundry instances and model deployments
+- [ ] Network Approach
+  - [ ] Hub-Based (using new subnets in existing hub network)
+  - [ ] AIGovSpoke-Hub-Spoke (create dedicated spoke VNet linked to hub)
+- [ ] Bring-Your-Own Network
+  - [ ] Create new VNet with customized address space
+  - [ ] Use existing VNet integration (vnet/subnets already created & configured)
+  - [ ] Use exiting Private DNS Zones (better with using existing VNet)
+  - [ ] Create new Private DNS Zones (better with new VNet)
+- [ ] APIM Network Configuration
+  - [ ] External (public endpoint, suitable for dev/test)
+  - [ ] Internal (private endpoint, recommended for production)
+  - [ ] APIM Customer Domains (for gateway, developer portal and management names)
+- [ ] Log Analytics Strategy
+  - [ ] New Workspace will be created
+  - [ ] Use existing centralized Workspace (cross-environment)
+- [ ] Resource Naming Convention & tags
+  - [ ] Auto-generated names
+  - [ ] Custom names/tags per organizational standards
+- [ ] Microsoft Foundry Model Deployment
+  - [ ] Deploy models as part of AI Citadel deployment (specify models/regions)
+  - [ ] None (use existing deployments that will be onboarded later)
+- [ ] Services SKUs & Capacities per Environment
+  - [ ] Development (cost-optimized SKUs)
+  - [ ] Staging (production SKUs with reduced capacity)
+  - [ ] Production (production SKUs with full capacity)
+
+Leverage deployment parameter files ([main.bicepparam](../bicep/infra/main.bicepparam)) to capture these decisions for each environment.
 
 ### Required Resource Providers
 
 ```bash
 # Register all required providers
+az provider register --namespace Microsoft.ApiCenter
 az provider register --namespace Microsoft.ApiManagement
+az provider register --namespace Microsoft.App
+az provider register --namespace Microsoft.Automation
 az provider register --namespace Microsoft.CognitiveServices
+az provider register --namespace Microsoft.Compute
+az provider register --namespace Microsoft.ContainerRegistry
+az provider register --namespace Microsoft.ContainerService
 az provider register --namespace Microsoft.DocumentDB
 az provider register --namespace Microsoft.EventHub
 az provider register --namespace Microsoft.Insights
-az provider register --namespace Microsoft.Logic
+az provider register --namespace Microsoft.KeyVault
+az provider register --namespace Microsoft.MachineLearningServices
+az provider register --namespace Microsoft.ManagedIdentity
 az provider register --namespace Microsoft.Network
 az provider register --namespace Microsoft.OperationalInsights
+az provider register --namespace Microsoft.Resources
 az provider register --namespace Microsoft.Storage
 az provider register --namespace Microsoft.Web
 
@@ -66,8 +113,8 @@ az provider list --query "[?registrationState=='Registered'].namespace" -o table
 
 **Option 2: Azure Cloud Shell**
 - All tools pre-installed
-- Storage account for persistence
-- Built-in editor
+- Storage account for persistence must be attached
+- Built-in editor (in the classic mode)
 
 **Option 3: Azure DevOps / GitHub Actions**
 - Self-hosted or Microsoft-hosted agents
@@ -101,7 +148,7 @@ AI Citadel Governance Hub uses **Bicep parameter files (.bicepparam)** for envir
 
 | File | Purpose | Use Case |
 |------|---------|----------|
-| [`main.bicepparam`](../bicep/infra/main.bicepparam) | Environment variables | Used in azd deployments, CI/CD |
+| [`main.bicepparam`](../bicep/infra/main.bicepparam) | Environment variables | Used in azd deployments, CI/CD (Default values come from here) |
 | [`main.parameters.dev.bicepparam`](../bicep/infra/main.parameters.dev.bicepparam) | Development | Dev/test environments |
 | [`main.parameters.prod.bicepparam`](../bicep/infra/main.parameters.prod.bicepparam) | Production | Production workloads |
 | [`main.parameters.complete.bicepparam`](../bicep/infra/main.parameters.complete.bicepparam) | Reference | All parameters documented |
@@ -135,6 +182,8 @@ param enableAPICenter = true
 
 #### Choosing the Right Parameter File
 
+##### Using `az deployment sub create`:
+
 **For Development:**
 ```bash
 az deployment sub create \
@@ -156,6 +205,13 @@ az deployment sub create \
 2. Rename to `main.parameters.<env>.bicepparam`
 3. Customize values
 4. Version control the file
+
+>Note: Using `az deployment sub create` will only provision the infrastructure. You still will need to deploy the `Logic App` workflows separately after the infrastructure is ready.
+
+##### Using `azd up`:
+
+This automatically picks up the `main.bicepparam` file. You can override specific parameters using environment variables or by modifying the `main.bicepparam` file directly.
+
 
 ---
 
@@ -216,7 +272,9 @@ param tags = {
 
 #### Network Deployment Approaches
 
-AI Citadel Governance Hub supports **two architectural patterns** for network integration:
+AI Citadel Governance Hub supports **two architectural patterns** for network integration.
+
+Based on your decisions in the earlier checklist, choose one of the following approaches:
 
 ##### **Approach 1: Hub-Based (Citadel as Part of Hub)**
 
