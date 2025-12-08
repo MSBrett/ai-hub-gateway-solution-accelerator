@@ -19,6 +19,7 @@ This package enables dynamic LLM backend routing without modifying APIM policies
 | **APIM Backends** | Individual backend resources for each LLM endpoint |
 | **Backend Pools** | Load-balanced pools for models with multiple backends |
 | **Policy Fragments** | Dynamic routing logic for model-based routing |
+| **Get Available Models Fragment** | Returns available model deployments with capabilities (similar to Azure Cognitive Services API) |
 
 ## Prerequisites
 
@@ -66,7 +67,12 @@ param llmBackendConfig = [
     backendType: 'ai-foundry'
     endpoint: 'https://aif-RESOURCE_TOKEN-0.services.ai.azure.com/models'
     authScheme: 'managedIdentity'
-    supportedModels: ['gpt-4o', 'gpt-4o-mini', 'DeepSeek-R1', 'Phi-4']
+    supportedModels: [
+      { name: 'gpt-4o', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2024-11-20' }
+      { name: 'gpt-4o-mini', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2024-07-18' }
+      { name: 'DeepSeek-R1', sku: 'GlobalStandard', capacity: 1, modelFormat: 'DeepSeek', modelVersion: '1' }
+      { name: 'Phi-4', sku: 'GlobalStandard', capacity: 1, modelFormat: 'Microsoft', modelVersion: '3' }
+    ]
     priority: 1
     weight: 100
   }
@@ -89,9 +95,21 @@ az deployment sub create --name llm-backend-onboarding --location eastus --templ
 | `backendType` | string | Yes | `ai-foundry`, `azure-openai`, or `external` |
 | `endpoint` | string | Yes | Base URL of the LLM service |
 | `authScheme` | string | Yes | `managedIdentity`, `apiKey`, or `token` |
-| `supportedModels` | array | Yes | Model names this backend supports |
+| `supportedModels` | array | Yes | Array of model objects (see Model Object Properties below) |
 | `priority` | number | No | 1-5, default 1 (lower = higher priority) |
 | `weight` | number | No | 1-1000, default 100 (load balancing weight) |
+
+### Model Object Properties
+
+Each model in the `supportedModels` array has these properties:
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `name` | string | Yes | Model name (e.g., `gpt-4o`, `DeepSeek-R1`, `Phi-4`) |
+| `sku` | string | No | SKU name for the deployment (default: `Standard`). Used in `get-available-models` response |
+| `capacity` | number | No | Capacity/TPM quota (default: 100). Used in `get-available-models` response |
+| `modelFormat` | string | No | Model format identifier, e.g., `OpenAI`, `DeepSeek`, `Microsoft` (default: `OpenAI`). Used in `get-available-models` response |
+| `modelVersion` | string | No | Version of the model (default: `1`). Used in `get-available-models` response |
 
 ### Backend Types
 
@@ -123,7 +141,12 @@ param llmBackendConfig = [
     backendType: 'ai-foundry'
     endpoint: 'https://aif-RESOURCE_TOKEN-0.services.ai.azure.com/models'
     authScheme: 'managedIdentity'
-    supportedModels: ['gpt-4o', 'gpt-4o-mini', 'DeepSeek-R1', 'Phi-4']
+    supportedModels: [
+      { name: 'gpt-4o', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2024-11-20' }
+      { name: 'gpt-4o-mini', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2024-07-18' }
+      { name: 'DeepSeek-R1', sku: 'GlobalStandard', capacity: 1, modelFormat: 'DeepSeek', modelVersion: '1' }
+      { name: 'Phi-4', sku: 'GlobalStandard', capacity: 1, modelFormat: 'Microsoft', modelVersion: '3' }
+    ]
     priority: 1
     weight: 100
   }
@@ -139,7 +162,12 @@ param llmBackendConfig = [
     backendType: 'ai-foundry'
     endpoint: 'https://aif-RESOURCE_TOKEN-0.services.ai.azure.com/models'
     authScheme: 'managedIdentity'
-    supportedModels: ['gpt-4o', 'gpt-4o-mini', 'DeepSeek-R1', 'Phi-4']
+    supportedModels: [
+      { name: 'gpt-4o', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2024-11-20' }
+      { name: 'gpt-4o-mini', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2024-07-18' }
+      { name: 'DeepSeek-R1', sku: 'GlobalStandard', capacity: 1, modelFormat: 'DeepSeek', modelVersion: '1' }
+      { name: 'Phi-4', sku: 'GlobalStandard', capacity: 1, modelFormat: 'Microsoft', modelVersion: '3' }
+    ]
     priority: 1
     weight: 100
   }
@@ -148,7 +176,10 @@ param llmBackendConfig = [
     backendType: 'ai-foundry'
     endpoint: 'https://aif-RESOURCE_TOKEN-1.services.ai.azure.com/models'
     authScheme: 'managedIdentity'
-    supportedModels: ['gpt-5', 'DeepSeek-R1']
+    supportedModels: [
+      { name: 'gpt-5', sku: 'GlobalStandard', capacity: 50, modelFormat: 'OpenAI', modelVersion: '1' }
+      { name: 'DeepSeek-R1', sku: 'GlobalStandard', capacity: 1, modelFormat: 'DeepSeek', modelVersion: '1' }
+    ]
     priority: 2
     weight: 50
   }
@@ -164,7 +195,12 @@ param llmBackendConfig = [
     backendType: 'ai-foundry'
     endpoint: 'https://aif-RESOURCE_TOKEN-0.services.ai.azure.com/models'
     authScheme: 'managedIdentity'
-    supportedModels: ['gpt-4o', 'gpt-4o-mini', 'DeepSeek-R1', 'Phi-4']
+    supportedModels: [
+      { name: 'gpt-4o', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2024-11-20' }
+      { name: 'gpt-4o-mini', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2024-07-18' }
+      { name: 'DeepSeek-R1', sku: 'GlobalStandard', capacity: 1, modelFormat: 'DeepSeek', modelVersion: '1' }
+      { name: 'Phi-4', sku: 'GlobalStandard', capacity: 1, modelFormat: 'Microsoft', modelVersion: '3' }
+    ]
     priority: 1
     weight: 100
   }
@@ -173,7 +209,11 @@ param llmBackendConfig = [
     backendType: 'azure-openai'
     endpoint: 'https://YOUR-AOAI-RESOURCE.openai.azure.com/openai'
     authScheme: 'managedIdentity'
-    supportedModels: ['gpt-4o', 'gpt-4o-mini', 'text-embedding-ada-002']
+    supportedModels: [
+      { name: 'gpt-4o', sku: 'Standard', capacity: 120, modelFormat: 'OpenAI', modelVersion: '0613' }
+      { name: 'gpt-4o-mini', sku: 'Standard', capacity: 120, modelFormat: 'OpenAI', modelVersion: '0613' }
+      { name: 'text-embedding-ada-002', sku: 'Standard', capacity: 120, modelFormat: 'OpenAI', modelVersion: '2' }
+    ]
     priority: 1
     weight: 100
   }
@@ -204,6 +244,57 @@ param llmBackendConfig = [
 6. Return Response
    → Client receives response with usage headers
 ```
+
+## Get Available Models API
+
+The `get-available-models` policy fragment enables an API endpoint that returns all available model deployments with their capabilities, similar to the Azure Cognitive Services deployment list API.
+
+This policy fragment is designed to support Microsoft Foundry integration with Citadel Governance Hub, allowing clients to query available models dynamically from Foundry portal experience.
+
+>NOTE: This policy fragment is included in the `/deployments` get operation of the Universal LLM API by default. Currently this Microsoft Foundry feature is in `preview` and may change in future releases.
+
+### Usage
+
+Include the policy fragment in any API operation to return available models:
+
+```xml
+<inbound>
+    <include-fragment fragment-id="get-available-models" />
+</inbound>
+```
+
+### Response Format
+
+```json
+{
+    "value": [
+        {
+            "id": "aif-citadel-primary",
+            "type": "ai-foundry",
+            "name": "gpt-4o",
+            "sku": { "name": "GlobalStandard", "capacity": 100 },
+            "properties": {
+                "model": { "format": "OpenAI", "name": "gpt-4o", "version": "2024-11-20" },
+                "capabilities": { "chatCompletion": "true" },
+                "provisioningState": "Succeeded"
+            }
+        },
+        {
+            "id": "aif-citadel-primary",
+            "type": "ai-foundry",
+            "name": "gpt-4o-mini",
+            "sku": { "name": "GlobalStandard", "capacity": 100 },
+            "properties": {
+                "model": { "format": "OpenAI", "name": "gpt-4o-mini", "version": "2024-11-20" },
+                "capabilities": { "chatCompletion": "true" },
+                "provisioningState": "Succeeded"
+            }
+        }
+    ]
+}
+```
+
+The response is dynamically generated based on the `llmBackendConfig` parameter, using the optional metadata fields (`sku`, `capacity`, `modelFormat`, `modelVersion`).
 
 ## Monitoring
 
@@ -282,6 +373,7 @@ llm-backend-onboarding/
         ├── frag-set-target-backend-pool.xml
         ├── frag-set-llm-requested-model.xml
         ├── frag-set-llm-usage.xml
+        ├── frag-get-available-models.xml    # NEW: Returns available models
         ├── universal-llm-api-policy.xml
         ├── universal-llm-openapi.json
         └── models-inference-openapi.json
