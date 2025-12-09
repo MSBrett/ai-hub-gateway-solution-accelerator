@@ -329,6 +329,17 @@ param aiFoundryInstances array = [
 ]
 
 @description('AI Foundry model deployments configuration - configure model deployments for Foundry instances.')
+@metadata({
+  example: '''
+  Each model object should have:
+  - name: Model name (required) - e.g., 'gpt-4o', 'DeepSeek-R1'
+  - publisher: Publisher/format identifier, e.g., 'OpenAI', 'DeepSeek', 'Microsoft' (used as modelFormat in backend config)
+  - version: Version of the model
+  - sku: SKU name for the deployment, e.g., 'GlobalStandard', 'Standard'
+  - capacity: Capacity/TPM quota
+  - aiserviceIndex: (Optional) Index of the AI Foundry instance to deploy to. Leave empty to deploy to all instances
+  '''
+})
 // Leaving 'aiserviceIndex' empty or omitted means this model deployment will be created for all AI Foundry resources in 'aiFoundryInstances', 
 // Adding 'aiserviceIndex' with a numeric value (0, 1, etc.) means that the model will be deployed only to that specific instance by index
 // The aiservice field will be automatically populated based on aiserviceIndex and the generated foundry resource names
@@ -423,9 +434,16 @@ var transformedAiFoundryModelsConfig = [for model in aiFoundryModelsConfig: unio
 })]
 
 // Group models by aiserviceIndex for backend configuration
+// Each model now includes full metadata: name, sku, capacity, modelFormat, modelVersion
 var modelsGroupedByInstance = [for (instance, i) in aiFoundryInstances: {
   instanceIndex: i
-  models: filter(map(aiFoundryModelsConfig, model => contains(model, 'aiserviceIndex') && model.aiserviceIndex == i ? model.name : ''), modelName => !empty(modelName))
+  models: filter(map(aiFoundryModelsConfig, model => contains(model, 'aiserviceIndex') && model.aiserviceIndex == i ? {
+    name: model.name
+    sku: model.sku
+    capacity: model.capacity
+    modelFormat: model.publisher
+    modelVersion: model.version
+  } : {}), m => !empty(m))
 }]
 
 /**
@@ -441,7 +459,12 @@ var modelsGroupedByInstance = [for (instance, i) in aiFoundryInstances: {
  * - backendType: 'ai-foundry' | 'azure-openai' | 'external'
  * - endpoint: Base URL of the LLM service
  * - authScheme: 'managedIdentity' | 'apiKey' | 'token'
- * - supportedModels: Array of model names (e.g., ['gpt-4', 'gpt-4-turbo'])
+ * - supportedModels: Array of model objects with:
+ *     - name: Model name (required)
+ *     - sku: SKU name for deployment (default: 'Standard')
+ *     - capacity: Capacity/TPM quota (default: 100)
+ *     - modelFormat: Model format identifier, e.g., 'OpenAI', 'DeepSeek', 'Microsoft' (default: 'OpenAI')
+ *     - modelVersion: Version of the model (default: '1')
  * - priority: (Optional) 1-5, default 1 (lower = higher priority)
  * - weight: (Optional) 1-1000, default 100 (higher = more traffic)
  * 
@@ -456,7 +479,12 @@ var modelsGroupedByInstance = [for (instance, i) in aiFoundryInstances: {
     backendType: 'ai-foundry'
     endpoint: 'https://aif-REPLACE-0.services.ai.azure.com/models'
     authScheme: 'managedIdentity'
-    supportedModels: ['gpt-4o-mini', 'gpt-4o', 'DeepSeek-R1', 'Phi-4']
+    supportedModels: [
+      { name: 'gpt-4o-mini', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2024-07-18' }
+      { name: 'gpt-4o', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2024-11-20' }
+      { name: 'DeepSeek-R1', sku: 'GlobalStandard', capacity: 1, modelFormat: 'DeepSeek', modelVersion: '1' }
+      { name: 'Phi-4', sku: 'GlobalStandard', capacity: 1, modelFormat: 'Microsoft', modelVersion: '3' }
+    ]
     priority: 1
     weight: 100
   }
@@ -467,7 +495,10 @@ var modelsGroupedByInstance = [for (instance, i) in aiFoundryInstances: {
     backendType: 'ai-foundry'
     endpoint: 'https://aif-REPLACE-1.services.ai.azure.com/models'
     authScheme: 'managedIdentity'
-    supportedModels: ['gpt-5', 'DeepSeek-R1']
+    supportedModels: [
+      { name: 'gpt-5', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2025-08-07' }
+      { name: 'DeepSeek-R1', sku: 'GlobalStandard', capacity: 1, modelFormat: 'DeepSeek', modelVersion: '1' }
+    ]
     priority: 1
     weight: 100
   }
