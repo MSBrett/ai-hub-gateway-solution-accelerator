@@ -131,7 +131,13 @@ Standard setup is already included in the default policies, but you can customiz
 
 >NOTE: The above policy fragment assumes that the client application is passing `x-app-id`, `x-sub-agent-id` and `x-enduser-id` headers in the request. You can modify the header names as per your requirements or use different approach to set these variables.
 
+### Semantic Cache Policy
+
+TBD
+
 ### Configuring Alerts Policy
+
+TBD
 
 ### Content Safety Policy
 
