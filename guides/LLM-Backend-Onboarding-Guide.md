@@ -1,6 +1,6 @@
 # LLM Backend Onboarding Guide
 
-This guide explains how to onboard LLM backends (Azure OpenAI, AI Foundry, or external providers) to an existing AI Hub Gateway APIM instance using the independent LLM Backend Onboarding deployment.
+This guide explains how to onboard LLM backends (Azure OpenAI, Microsoft Foundry, or external providers) to an existing AI Hub Gateway APIM instance using the independent LLM Backend Onboarding deployment.
 
 ## Overview
 
@@ -33,8 +33,8 @@ Below is a sample overview of relevant configurations associated with LLM onboar
 │  └── pool-gpt-4o-mini (multiple backends)                           │
 ├─────────────────────────────────────────────────────────────────────┤
 │  Backends                                                           │
-│  ├── llm-foundry-east-us (AI Foundry)                               │
-│  ├── llm-foundry-west-us (AI Foundry)                               │
+│  ├── llm-foundry-east-us (Microsoft Foundry)                               │
+│  ├── llm-foundry-west-us (Microsoft Foundry)                               │
 │  └── llm-openai-sweden (Azure OpenAI)                               │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -43,10 +43,10 @@ Below is a sample overview of relevant configurations associated with LLM onboar
 
 - Existing APIM instance deployed via the AI Hub Gateway Solution Accelerator
 - APIM Managed Identity with appropriate permissions on target LLM backends
-- At least one existing LLM backend (Azure OpenAI, AI Foundry, or external)
+- At least one existing LLM backend (Azure OpenAI, Microsoft Foundry, or external)
 - Azure CLI and Bicep CLI installed
 
->NOTE: This onboarding script does not grant any permissions to target Azure backends (like Microsoft Foundry). Ensure that APIM user managed identity has at least `` role assignment on the target backend.
+>NOTE: This onboarding script does not grant any permissions to target Azure backends (like Microsoft Foundry). Ensure that APIM user managed identity has at least `Cognitive Services User` role assignment on the target backend.
 
 ## Quick Start
 
@@ -118,7 +118,7 @@ az deployment sub create --name llm-onboarding-deployment --location REPLACE --t
 
 ### Backend types examples
 
-#### AI Foundry (`ai-foundry`)
+#### Microsoft Foundry (`ai-foundry`)
 ```bicep
 {
   backendId: 'foundry-instance'
@@ -155,7 +155,7 @@ az deployment sub create --name llm-onboarding-deployment --location REPLACE --t
 
 | Scheme | Description | Use Case |
 |--------|-------------|----------|
-| `managedIdentity` | Azure AD token via managed identity | Azure OpenAI, AI Foundry (uses APIM managed identity which must have permission) |
+| `managedIdentity` | Azure AD token via managed identity | Azure OpenAI, Microsoft Foundry (uses APIM managed identity which must have permission) |
 | `apiKey` | Static API key in named value | External providers |
 | `token` | Bearer token from named value | OAuth-based services |
 
