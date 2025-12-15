@@ -10,12 +10,15 @@ The following policy snippets can be applied as needed for the product policy ac
 
 ```xml
 <!-- Inboud Section of the Product Policy -->
-<!-- Extract and validate model parameter from request and save it to requestedModel -->
+<!-- Extract and validate model parameter from request -->
 <include-fragment fragment-id="set-llm-requested-model" />
-
 <!-- Restrict access for this product to specific models -->
 <choose>
-    <when condition="@(!new [] { "gpt-4o", "DeepSeek-R1" }.Contains((context.Variables["requestedModel"] ?? string.Empty).ToString(), StringComparer.OrdinalIgnoreCase))">
+    <when condition="@{
+        var allowedModels = new string[] { "gpt-4o", "deepseek-r1" };
+        var requestedModel = (context.Variables.GetValueOrDefault<string>("requestedModel") ?? string.Empty).ToLowerInvariant();
+        return !allowedModels.Any(m => m.ToLowerInvariant() == requestedModel);
+    }">
         <return-response>
             <set-status code="401" reason="Unauthorized model access" />
         </return-response>
@@ -137,7 +140,21 @@ TBD
 
 ### Configuring Alerts Policy
 
-TBD
+Collecting throttling events can help in setting up alerts in Application Insights. You can configure the following variables in the product policy outbound section to customize the throttling event details:
+
+```xml
+<outbound>
+    <base />
+    <!-- Raising throttling events (http 429 only) can help in setting up alerts in App Insights -->
+    <!-- Set the following variables to customize the throttling event details -->
+    <set-variable name="productName" value="@(context.Product?.Name?.ToString() ?? "Portal-Admin")" />
+    <set-variable name="deploymentName" value="@((string)context.Variables.GetValueOrDefault<string>("requestedModel", "DefaultModel"))" />
+    <set-variable name="appId" value="@((string)context.Variables.GetValueOrDefault<string>("appId", context.Subscription?.Id ?? "Portal-Admin-Sub"))" />
+    <include-fragment fragment-id="raise-throttling-events" />
+</outbound>
+```
+
+Based on this policy, you can configure alerts in Application Insights to monitor for high throttling events and take necessary actions.
 
 ### Content Safety Policy
 

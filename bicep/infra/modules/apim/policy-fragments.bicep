@@ -88,6 +88,15 @@ resource throttlingEventsPolicyFragment 'Microsoft.ApiManagement/service/policyF
   }
 }
 
+resource raiseThrottlingEventsPolicyFragment 'Microsoft.ApiManagement/service/policyFragments@2022-08-01' = {
+  parent: apimService
+  name: 'raise-throttling-events'
+  properties: {
+    value: loadTextContent('./policies/frag-raise-throttling-events.xml')
+    format: 'rawxml'
+  }
+}
+
 resource dynamicThrottlingAssignmentFragment 'Microsoft.ApiManagement/service/policyFragments@2022-08-01' = {
   parent: apimService
   name: 'dynamic-throttling-assignment'
