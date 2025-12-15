@@ -153,7 +153,7 @@ Head to [validation](../validation/) part of this template to run through variou
 ### Application Insights
 
 1. Navigate to Azure Portal
-2. Find Application Insights resource (name: `appi-apim-*`)
+2. Find Application Insights associated with APIM resource (name: `appi-apim-*`)
 3. View:
    - Live Metrics
    - Application Map

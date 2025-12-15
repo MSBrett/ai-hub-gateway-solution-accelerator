@@ -10,14 +10,22 @@
 
 ---
 
-## 🎯 Transform Your AI Strategy
+## 🎯 The AI Governance Imperative
 
-> **62%** of practitioners cite security concerns as the top blocker to wider AI adoption  
-> **71%** of enterprises struggle to track AI usage, enforce quotas, and report costs  
-> **47%** of organizations require explicit guardrails before deploying AI agents  
-> **70%** of customers need an AI registry for agents and tools to scale AI adoption  
+As AI systems become more powerful and integrated into everyday life, **governance is no longer a "nice-to-have"; it's a must**. Whether you're aligning to emerging regulations like the EU AI Act, meeting internal standards for risk and safety, or ensuring your AI systems are meeting your enterprise's business goals with scale and efficiency, the ability to govern AI responsibly at speed is a game-changer.
+
+Yet, **governance and developer velocity often feel fundamentally misaligned**. Organizations face critical bottlenecks:
+
+- **Manual Risk Assessments**: Frequently time-consuming and lacking standardization
+- **Scattered Evaluation Tools**: Fragmented across different teams and systems
+- **Unclear Governance Requirements**: Ambiguous policies that are difficult to operationalize
+- **Implementation Gaps**: Policies rarely map cleanly to real-world technical implementation
+
+**The result?** Bottlenecks and delays that frustrate both governance teams and developers, slowing AI adoption and increasing organizational risk.
 
 **AI Citadel Governance Hub turns these challenges into platform strengths** — governed access, transparent consumption, defensible guardrails, and a shared catalog of reusable AI capabilities.
+
+For comprehensive guidance on the approach to AI governance, check out [Foundry Citadel Platform](https://aka.ms/foundry-citadel).
 
 ---
 
@@ -166,7 +174,7 @@ The central governance layer with unified AI Gateway that all AI workloads route
 |-----------|---------|---------------------|
 | **🚪 API Management** | Unified AI gateway | LLM governance, AI resiliency, AI registry gateway |
 | **📘 API Center** | Universal AI Registry | Discovery of available AI tools, agents and AI services |
-| **🔍 Microsoft Foundry** | Platform Models/Observability | Platform LLMs & AI Evaluations |
+| **🔍 Microsoft Foundry** | Control Plane/Models/Observability | Platform LLMs, Control Plane & AI Evaluations |
 | **📊 Log Analytics** | Logs, metrics & audits | Scalable enterprise telemetry ingestion and storage |
 | **📊 Application Insights** | Platform monitoring | Performance dashboards, automated alerts |
 | **📨 Event Hub** | Usage data streaming | Real-time usage streaming, custom logging |
@@ -183,12 +191,13 @@ AI Gateway security & compliance enforcements components:
 | **🔐 Managed Identity** | Zero-credential auth | Secure service-to-service communication |
 | **🛡️ Content Safety** | LLM protection | Prompt Shield and Content Safety protections |
 | **💳 Language Service** | PII detection | Natural language and RegEx based PII entity detection with anonymization support |
+| **🔍 Microsoft Foundry** | Control Plane | Control plane, responsible AI, registration of external agents  |
 
 Supported by subscription wide security services:
 
 | Component | Purpose |Enterprise Features |
 |---------|---------|---------------------|
-|**Defender for Cloud**|Threat protection|AI workload security posture management|
+|**Defender for AI**|Threat protection|AI workload security posture management|
 |**Purview**|Data governance|Sensitivity labeling, data classification|
 |**Entra ID**|Identity & access management|Zero Trust architecture, conditional access|
 
@@ -226,7 +235,7 @@ Building new agents is accelerated through the **Citadel Agent Spoke** landing z
 
 **Deployment Approach:**
 - **One spoke per business unit or use case** - Dedicated environments for insurance claims processing, customer support automation, or other agentic scenarios
-- **Flexible runtime options** - Choose between AI Foundry Agents (fully managed runtime) or Azure Container Apps (bring-your-own-agent)
+- **Flexible runtime options** - Choose between Microsoft Foundry Agents (fully managed runtime) or Azure Container Apps (bring-your-own-agent)
 - **Pre-configured infrastructure** - Automated deployment via Bicep or Terraform with all networking, security, and monitoring built-in
 - **Hub integration** - Seamless connection to Citadel Governance Hub through Citadel Access & Publish Contracts
 
@@ -234,11 +243,11 @@ Building new agents is accelerated through the **Citadel Agent Spoke** landing z
 
 | Component | Purpose |
 |-----------|---------|
-| **🤖 Azure AI Foundry** | Managed agent runtime with rich SDK, prompt flow orchestration, and native AI Evaluations |
+| **🤖 Microsoft Foundry** | Managed agent runtime with rich SDK, prompt flow orchestration, and native AI Evaluations |
 | **📦 Azure Container Apps** | Serverless container hosting for custom-built agents with auto-scaling and simplified deployment |
 | **🔍 Azure AI Search** | Vector and hybrid search for RAG patterns and document indexing |
 | **🗄️ Azure Cosmos DB** | Distributed NoSQL database for agent state, threads, and multi-agent coordination |
-| **💾 Azure Storage** | Blob storage for Logic App, AI Foundry datasets, agent assets, and shared files |
+| **💾 Azure Storage** | Blob storage for Logic App, Microsoft Foundry datasets, agent assets, and shared files |
 | **🔐 Azure Key Vault** | Secure secrets, keys, and certificates with automated rotation |
 | **📊 Application Insights** | Detailed monitoring, diagnostics, and alerts integrated with platform-level observability |
 | **🔒 Virtual Network** | Private connectivity with subnets for compute, agents, data, and management |
@@ -438,10 +447,11 @@ Citadel Governance Hub is continuously evolving as part of the **Foundry Citadel
 - Authentication support with Gateway keys or with both Gateway keys and JWT tokens
 
 ### 🚧 **Coming Soon**
+- Microsoft Foundry Control Plane integration
 - AI Evaluation pipeline at the gateway level
 - Add support for A2A and agents publishing (integration with AI Gateway and AI Registry)
 - Add guidance for Citadel Publish Contracts
-- Defender enablement
+- Defender & Purview enablement
 - JWT only authentication support (without Gateway keys)
 - Enhanced platform observability with custom dashboards and alerts (geared towards agents and MCP tools)
 
@@ -465,7 +475,6 @@ Please see our [Contributing Guide](./CONTRIBUTING.md) for details.
 ## 📞 Support & Community
 
 - **🐛 Issues**: [GitHub Issues](https://github.com/Azure-Samples/ai-hub-gateway-solution-accelerator/issues)
-- **💬 Discussions**: [GitHub Discussions](https://github.com/Azure-Samples/ai-hub-gateway-solution-accelerator/discussions)
 
 ---
 
@@ -481,6 +490,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 *Providing protection, structure, and strength as you scale new heights with enterprise AI*
 
-[🚀 Deploy Now](#-quick-deploy) | [📚 Documentation](#-comprehensive-documentation) | [🤝 Contribute](#-contributing)
+[🚀 Deploy Now](./guides/quick-deployment-guide.md) | [📚 Documentation](#-comprehensive-documentation) | [🤝 Contribute](#-contributing)
 
 </div>

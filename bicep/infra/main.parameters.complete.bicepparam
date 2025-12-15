@@ -17,7 +17,8 @@ param environmentName = 'citadel-dev'
 // Allowed: uaenorth, southafricanorth, westeurope, southcentralus, australiaeast, 
 //          canadaeast, eastus, eastus2, francecentral, japaneast, northcentralus, 
 //          swedencentral, switzerlandnorth, uksouth
-param location = 'eastus'
+param location = 'swedencentral'
+param apicLocation = 'swedencentral'
 
 // Tags applied to all resources
 param tags = {
@@ -50,6 +51,7 @@ param languageServiceName = ''
 param aiContentSafetyName = ''
 param apicServiceName = ''
 param aiFoundryResourceName = ''
+param keyVaultName = ''
 
 // =============================================================================
 // MONITORING PARAMETERS
@@ -124,6 +126,8 @@ param eventHubPrivateEndpointName = ''
 param languageServicePrivateEndpointName = ''
 param aiContentSafetyPrivateEndpointName = ''
 param apimV2PrivateEndpointName = ''
+param aiFoundryPrivateEndpointName = ''
+param keyVaultPrivateEndpointName = ''
 
 // =============================================================================
 // SERVICES NETWORK ACCESS CONFIGURATION
@@ -140,6 +144,8 @@ param cosmosDbPublicAccess = 'Disabled'
 param eventHubNetworkAccess = 'Enabled'
 param languageServiceExternalNetworkAccess = 'Disabled'
 param aiContentSafetyExternalNetworkAccess = 'Disabled'
+param aiFoundryExternalNetworkAccess = 'Disabled'
+param keyVaultExternalNetworkAccess = 'Disabled'
 
 // Azure Monitor Private Link Scope
 param useAzureMonitorPrivateLinkScope = false
@@ -178,6 +184,10 @@ param aiContentSafetySkuName = 'S0'
 
 // API Center SKU
 param apicSku = 'Free'
+
+// Key Vault SKU
+// Allowed: standard, premium
+param keyVaultSkuName = 'standard'
 
 // =============================================================================
 // ACCELERATOR SPECIFIC PARAMETERS

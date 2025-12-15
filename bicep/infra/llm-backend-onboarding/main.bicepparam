@@ -59,11 +59,18 @@ param apimManagedIdentity = {
 // - backendType: 'ai-foundry' | 'azure-openai' | 'external'
 // - endpoint: Base URL of the LLM service
 // - authScheme: 'managedIdentity' | 'apiKey' | 'token'
-// - supportedModels: Array of model names (e.g., ['gpt-4o', 'gpt-4o-mini'])
+// - supportedModels: Array of model objects (see below)
 //
-// Optional Properties:
+// Optional Properties (for load balancing):
 // - priority: 1-5, default 1 (lower = higher priority for load balancing)
 // - weight: 1-1000, default 100 (higher = more traffic share)
+//
+// Model Object Properties (in supportedModels array):
+// - name: Model name (required) - e.g., 'gpt-4o', 'DeepSeek-R1'
+// - sku: SKU name for the deployment (default: 'Standard')
+// - capacity: Capacity/TPM quota (default: 100)
+// - modelFormat: Model format identifier, e.g., 'OpenAI', 'DeepSeek', 'Microsoft' (default: 'OpenAI')
+// - modelVersion: Version of the model (default: '1')
 //
 // Example configurations for different scenarios are shown below.
 // ============================================================================
@@ -78,11 +85,13 @@ param llmBackendConfig = [
     backendType: 'ai-foundry'
     endpoint: 'https://aif-RESOURCE_TOKEN-0.services.ai.azure.com/models' // Replace with your AI Foundry endpoint
     authScheme: 'managedIdentity'
+    // Each model has its own metadata for get-available-models response
     supportedModels: [
-      'gpt-4o'
-      'gpt-4o-mini'
-      'DeepSeek-R1'
-      'Phi-4'
+      { name: 'gpt-4o-mini', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2024-07-18' }
+      { name: 'gpt-4o', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2024-11-20' }
+      { name: 'DeepSeek-R1', sku: 'GlobalStandard', capacity: 1, modelFormat: 'DeepSeek', modelVersion: '1' }
+      { name: 'Phi-4', sku: 'GlobalStandard', capacity: 1, modelFormat: 'Microsoft', modelVersion: '3' }
+      { name: 'text-embedding-3-large', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '1' }
     ]
     priority: 1
     weight: 100
@@ -99,8 +108,9 @@ param llmBackendConfig = [
     endpoint: 'https://aif-RESOURCE_TOKEN-1.services.ai.azure.com/models' // Replace with your secondary AI Foundry endpoint
     authScheme: 'managedIdentity'
     supportedModels: [
-      'gpt-5'
-      'DeepSeek-R1'
+      { name: 'gpt-5', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2025-08-07' }
+      { name: 'DeepSeek-R1', sku: 'GlobalStandard', capacity: 1, modelFormat: 'DeepSeek', modelVersion: '1' }
+      { name: 'text-embedding-3-large', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '1' }
     ]
     priority: 2
     weight: 50
@@ -116,9 +126,9 @@ param llmBackendConfig = [
   //   endpoint: 'https://YOUR-AOAI-RESOURCE.openai.azure.com/openai'
   //   authScheme: 'managedIdentity'
   //   supportedModels: [
-  //     'gpt-4'
-  //     'gpt-35-turbo'
-  //     'text-embedding-ada-002'
+  //     { name: 'gpt-4', sku: 'Standard', capacity: 120, modelFormat: 'OpenAI', modelVersion: '0613' }
+  //     { name: 'gpt-35-turbo', sku: 'Standard', capacity: 120, modelFormat: 'OpenAI', modelVersion: '0613' }
+  //     { name: 'text-embedding-ada-002', sku: 'Standard', capacity: 120, modelFormat: 'OpenAI', modelVersion: '2' }
   //   ]
   //   priority: 1
   //   weight: 100

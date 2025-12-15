@@ -29,7 +29,10 @@ param managedIdentityClientId string
       backendType: 'ai-foundry'
       endpoint: 'https://my-foundry-project.eastus.inference.ml.azure.com'
       authScheme: 'managedIdentity'
-      supportedModels: ['gpt-4', 'gpt-4-turbo']
+      supportedModels: [
+        { name: 'gpt-4', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '0613' }
+        { name: 'gpt-4-turbo', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '1106' }
+      ]
       priority: 1
       weight: 100
     }
@@ -38,7 +41,10 @@ param managedIdentityClientId string
       backendType: 'azure-openai'
       endpoint: 'https://my-openai-eastus.openai.azure.com'
       authScheme: 'managedIdentity'
-      supportedModels: ['gpt-35-turbo', 'text-embedding-ada-002']
+      supportedModels: [
+        { name: 'gpt-35-turbo', sku: 'Standard', capacity: 120, modelFormat: 'OpenAI', modelVersion: '0613' }
+        { name: 'text-embedding-ada-002', sku: 'Standard', capacity: 120, modelFormat: 'OpenAI', modelVersion: '2' }
+      ]
       priority: 1
       weight: 100
     }
@@ -63,12 +69,16 @@ resource apimService 'Microsoft.ApiManagement/service@2024-06-01-preview' existi
 /**
  * Create individual backends for each LLM endpoint
  * Each backend represents a single LLM service endpoint with its configuration
+ * 
+ * supportedModels can be either:
+ * - Array of strings (legacy): ['gpt-4', 'gpt-35-turbo']
+ * - Array of objects (new): [{ name: 'gpt-4', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '1' }]
  */
 resource llmBackends 'Microsoft.ApiManagement/service/backends@2024-06-01-preview' = [for (config, i) in llmBackendConfig: {
   name: config.backendId
   parent: apimService
   properties: {
-    description: 'LLM Backend: ${config.backendType} - ${config.backendId} - Supports models: ${config.supportedModels}'
+    description: 'LLM Backend: ${config.backendType} - ${config.backendId} - Supports models: ${join(map(config.supportedModels, m => m.name), ', ')}'
     url: config.endpoint
     protocol: 'http'
     

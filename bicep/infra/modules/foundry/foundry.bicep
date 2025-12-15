@@ -95,6 +95,16 @@ param dnsSubscriptionId string = ''
 param dnsZoneResourceId string = ''
 
 // ------------------
+//    KEY VAULT PARAMETERS
+// ------------------
+
+@description('Key Vault resource ID for connection')
+param keyVaultId string = ''
+
+@description('Key Vault URI for connection')
+param keyVaultUri string = ''
+
+// ------------------
 //    VARIABLES
 // ------------------
 
@@ -207,6 +217,26 @@ resource appInsightsConnection 'Microsoft.CognitiveServices/accounts/connections
   }
 }]
 
+// Key Vault connection for AI Foundry resources
+// resource keyVaultConnection 'Microsoft.CognitiveServices/accounts/connections@2025-06-01' = [for (config, i) in aiServicesConfig: if (!empty(keyVaultId) && !empty(keyVaultUri)) {
+//   parent: foundryResources[i]
+//   name: 'keyvault-connection'
+//   properties: {
+//     authType: 'AccountManagedIdentity'
+//     category: 'AzureKeyVault'
+//     target: keyVaultUri
+//     useWorkspaceManagedIdentity: true
+//     isSharedToAll: true
+//     sharedUserList: []
+//     peRequirement: 'NotRequired'
+//     peStatus: 'NotApplicable'
+//     metadata: {
+//       ApiType: 'Azure'
+//       ResourceId: keyVaultId
+//     }
+//   }
+// }]
+
 resource roleAssignmentCognitiveServicesUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for (config, i) in aiServicesConfig: {
   scope: foundryResources[i]
   name: guid(subscription().id, resourceGroup().id, foundryResources[i].name, cognitiveServicesUserRoleDefinitionID, apimPrincipalId)
@@ -264,3 +294,5 @@ output extendedAIServicesConfig array = [for (config, i) in aiServicesConfig: {
   endpoint: foundryResources[i].properties.endpoint
   foundryProjectEndpoint: 'https://${foundryResources[i].name}.services.ai.azure.com/api/projects/${aiProject[i].name}'
 }]
+
+output aiFoundryPrincipalIds array = [for (config, i) in aiServicesConfig: foundryResources[i].identity.principalId]

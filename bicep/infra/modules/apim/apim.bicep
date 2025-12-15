@@ -332,6 +332,7 @@ module llmBackendPools './llm-backend-pools.bicep' = {
  * Dynamic LLM Policy Fragments
  * Generates policy fragments with backend pool configurations for routing logic
  * Updates set-backend-pools and set-backend-authorization fragments dynamically
+ * Also generates get-available-models fragment with model metadata
  */
 module llmPolicyFragments './llm-policy-fragments.bicep' =  {
   name: 'llm-policy-fragments'
@@ -339,6 +340,7 @@ module llmPolicyFragments './llm-policy-fragments.bicep' =  {
     apimServiceName: apimService.name
     policyFragmentConfig: llmBackendPools.outputs.policyFragmentConfig
     managedIdentityClientId: managedIdentity.properties.clientId
+    llmBackendConfig: llmBackendConfig
   }
 }
 
@@ -400,6 +402,19 @@ resource universalLlmDeploymentOperation 'Microsoft.ApiManagement/service/apis/o
   parent: universalLLMApi
 }
 
+resource openAIApi 'Microsoft.ApiManagement/service/apis@2022-08-01' existing = {
+  name: 'azure-openai-api'
+  parent: apimService
+  dependsOn: [
+    apimOpenaiApi
+  ]
+}
+
+resource openAIDeploymentOperation 'Microsoft.ApiManagement/service/apis/operations@2022-08-01' existing = {
+  name: 'deployments'
+  parent: openAIApi
+}
+
 resource universalLlmDeploymentOperationPolicy 'Microsoft.ApiManagement/service/apis/operations/policies@2022-08-01' = {
   name: 'policy'
   parent: universalLlmDeploymentOperation
@@ -409,190 +424,16 @@ resource universalLlmDeploymentOperationPolicy 'Microsoft.ApiManagement/service/
   }
 }
 
+resource openAIDeploymentOperationPolicy 'Microsoft.ApiManagement/service/apis/operations/policies@2022-08-01' = {
+  name: 'policy'
+  parent: openAIDeploymentOperation
+  properties: {
+    format: 'rawxml'
+    value: loadTextContent('./policies/universal-llm-api-deployments-policy.xml')
+  }
+}
+
 //////////// End of AI Foundry Integration Requirements /////////////
-
-// // Create AI-Retail product
-// resource retailProduct 'Microsoft.ApiManagement/service/products@2022-08-01' = {
-//   name: 'oai-retail-assistant'
-//   parent: apimService
-//   properties: {
-//     displayName: 'OAI-Retail-Assistant'
-//     description: 'Offering OpenAI services for the retail and e-commerce platforms assistant.'
-//     subscriptionRequired: true
-//     approvalRequired: true
-//     subscriptionsLimit: 200
-//     state: 'published'
-//     terms: 'By subscribing to this product, you agree to the terms and conditions.'
-//   }
-// }
-
-// resource retailProductOpenAIApi 'Microsoft.ApiManagement/service/products/apiLinks@2023-05-01-preview' = {
-//   name: 'retail-product-openai-api'
-//   parent: retailProduct
-//   properties: {
-//     apiId: apimOpenaiApi.outputs.apiId
-//   }
-// }
-
-// resource retailProductPolicy 'Microsoft.ApiManagement/service/products/policies@2022-08-01' =  {
-//   name: 'policy'
-//   parent: retailProduct
-//   properties: {
-//     value: loadTextContent('./policies/retail_product_policy.xml')
-//     format: 'rawxml'
-//   }
-//   dependsOn: [
-//     apimOpenaiApi
-//   ]
-// }
-
-// resource retailSubscription 'Microsoft.ApiManagement/service/subscriptions@2022-08-01' = {
-//   name: 'oai-retail-assistant-sub-01'
-//   parent: apimService
-//   properties: {
-//     displayName: 'AI-Retail-Internal-Subscription'
-//     state: 'active'
-//     scope: retailProduct.id
-//   }
-// }
-
-// // Create AI-HR product
-// resource hrProduct 'Microsoft.ApiManagement/service/products@2022-08-01' = {
-//   name: 'oai-hr-assistant'
-//   parent: apimService
-//   properties: {
-//     displayName: 'OAI-HR-Assistant'
-//     description: 'Offering OpenAI services for the internal HR platforms.'
-//     subscriptionRequired: true
-//     approvalRequired: true
-//     subscriptionsLimit: 200
-//     state: 'published'
-//     terms: 'By subscribing to this product, you agree to the terms and conditions.'
-//   }
-// }
-
-// resource hrProductOpenAIApi 'Microsoft.ApiManagement/service/products/apiLinks@2023-05-01-preview' = {
-//   name: 'hr-product-openai-api'
-//   parent: hrProduct
-//   properties: {
-//     apiId: apimOpenaiApi.outputs.apiId
-//   }
-// }
-
-// resource hrProductPolicy 'Microsoft.ApiManagement/service/products/policies@2022-08-01' =  {
-//   name: 'policy'
-//   parent: hrProduct
-//   properties: {
-//     value: loadTextContent('./policies/hr_product_policy.xml')
-//     format: 'rawxml'
-//   }
-//   dependsOn: [
-//     apimOpenaiApi
-//   ]
-// }
-
-// resource hrSubscription 'Microsoft.ApiManagement/service/subscriptions@2022-08-01' = {
-//   name: 'oai-hr-assistant-sub-01'
-//   parent: apimService
-//   properties: {
-//     displayName: 'OAI-HR-Assistant-Sub-01'
-//     state: 'active'
-//     scope: hrProduct.id
-//   }
-// }
-
-// // HR PII Product
-// resource hrPIIProduct 'Microsoft.ApiManagement/service/products@2022-08-01' = {
-//   name: 'oai-hr-pii-assistant'
-//   parent: apimService
-//   properties: {
-//     displayName: 'OAI-HR-PII-Assistant'
-//     description: 'Offering OpenAI services for the internal HR platforms with PII anonymization processing.'
-//     subscriptionRequired: true
-//     approvalRequired: true
-//     subscriptionsLimit: 200
-//     state: 'published'
-//     terms: 'By subscribing to this product, you agree to the terms and conditions.'
-//   }
-//   dependsOn: [
-//     policyFragments
-//     ehUsageLogger
-//     ehPIIUsageLogger
-//     contentSafetyBackend
-//   ]
-// }
-
-// resource hrPIIProductOpenAIApi 'Microsoft.ApiManagement/service/products/apiLinks@2023-05-01-preview' = {
-//   name: 'hr-pii-product-openai-api'
-//   parent: hrPIIProduct
-//   properties: {
-//     apiId: apimOpenaiApi.outputs.apiId
-//   }
-// }
-
-// resource hrPIIProductPolicy 'Microsoft.ApiManagement/service/products/policies@2022-08-01' =  {
-//   name: 'policy'
-//   parent: hrPIIProduct
-//   properties: {
-//     value: loadTextContent('./policies/hr_pii_product_policy.xml')
-//     format: 'rawxml'
-//   }
-//   dependsOn: [
-//     apimOpenaiApi
-//   ]
-// }
-
-// resource hrPIISubscription 'Microsoft.ApiManagement/service/subscriptions@2022-08-01' = {
-//   name: 'oai-hr-pii-assistant-sub-01'
-//   parent: apimService
-//   properties: {
-//     displayName: 'OAI-HR-PII-Assistant-Sub-01'
-//     state: 'active'
-//     scope: hrPIIProduct.id
-//   }
-// }
-
-// // Create Search-HR product
-// resource searchHRProduct 'Microsoft.ApiManagement/service/products@2022-08-01' = if(enableAzureAISearch) {
-//   name: 'src-hr-assistant'
-//   parent: apimService
-//   properties: {
-//     displayName: 'SRC-HR-Assistant'
-//     description: 'Offering AI Search services for the HR systems.'
-//     subscriptionRequired: true
-//     approvalRequired: true
-//     subscriptionsLimit: 200
-//     state: 'published'
-//     terms: 'By subscribing to this product, you agree to the terms and conditions.'
-//   }
-// }
-
-// resource searchHRProductAISearchApi 'Microsoft.ApiManagement/service/products/apiLinks@2023-05-01-preview' = if (enableAzureAISearch) {
-//   name: 'src-hr-product-ai-search-api'
-//   parent: searchHRProduct
-//   properties: {
-//     apiId: apimAiSearchIndexApi.outputs.id
-//   }
-// }
-
-// resource searchHRProductProductPolicy 'Microsoft.ApiManagement/service/products/policies@2022-08-01' =  if (enableAzureAISearch) {
-//   name: 'policy'
-//   parent: searchHRProduct
-//   properties: {
-//     value: loadTextContent('./policies/search_hr_product_policy.xml')
-//     format: 'rawxml'
-//   }
-// }
-
-// resource searchHRSubscription 'Microsoft.ApiManagement/service/subscriptions@2022-08-01' = if (enableAzureAISearch) {
-//   name: 'src-hr-assistant-sub-01'
-//   parent: apimService
-//   properties: {
-//     displayName: 'SRC-HR-Assistant-Sub-01'
-//     state: 'active'
-//     scope: searchHRProduct.id
-//   }
-// }
 
 resource aiSearchBackends 'Microsoft.ApiManagement/service/backends@2022-08-01' = [for (aiSearchInstance, i) in aiSearchInstances: if(enableAzureAISearch) {
   name: aiSearchInstance.name
@@ -839,29 +680,6 @@ resource apimDiagnosticSettings 'Microsoft.Insights/diagnosticSettings@2021-05-0
   }
 }
 
-// resource apimRetailDevUser 'Microsoft.ApiManagement/service/users@2022-08-01' = {
-//   parent: apimService
-//   name: 'ai-retail-dev-user'
-//   properties: {
-//     firstName: 'Retail AI'
-//     lastName: 'Developer'
-//     email: 'myuser@example.com'
-//     state: 'active'
-//   }
-// }
-
-// resource apimRetailDevUserSubscription 'Microsoft.ApiManagement/service/subscriptions@2022-08-01' = {
-//   parent: apimService
-//   name: 'retail-ai-dev-user-subscription'
-//   properties: {
-//     displayName: 'Retail AI Dev User Subscription'
-//     ownerId: '/users/${apimRetailDevUser.id}'
-//     state: 'active'
-//     allowTracing: true
-//     scope: '/products/${retailProduct.id}'
-//   }
-// }
-
 // Sample MCP resources
 module weatherAPI './api.bicep' = if (isMCPSampleDeployed) {
   name: 'weather-api'
@@ -897,6 +715,7 @@ module weatherMCP './mcp-from-api.bicep' = if (isMCPSampleDeployed) {
   }
   dependsOn: [
     weatherAPI
+    apimLogger
   ]
 }
 
@@ -914,6 +733,7 @@ module microsoftLearnMCPServer 'mcp-existing.bicep' = if (isMCPSampleDeployed) {
     mcpPolicyXml: ''
   }
   dependsOn: [
+    apimLogger
   ]
 }
 

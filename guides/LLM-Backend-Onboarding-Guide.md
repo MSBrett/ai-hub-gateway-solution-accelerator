@@ -1,6 +1,6 @@
 # LLM Backend Onboarding Guide
 
-This guide explains how to onboard LLM backends (Azure OpenAI, AI Foundry, or external providers) to an existing AI Hub Gateway APIM instance using the independent LLM Backend Onboarding deployment.
+This guide explains how to onboard LLM backends (Azure OpenAI, Microsoft Foundry, or external providers) to an existing AI Hub Gateway APIM instance using the independent LLM Backend Onboarding deployment.
 
 ## Overview
 
@@ -13,29 +13,28 @@ The LLM Backend Onboarding deployment enables dynamic routing of LLM requests ac
 
 ## Architecture
 
+A typical onboarding includes various policy updates and backend configurations.
+
+Below is a sample overview of relevant configurations associated with LLM onboarding:
+
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                          APIM Gateway                               │
-├─────────────────────────────────────────────────────────────────────┤
-│  Universal LLM API                                                  │
-│  ├── /chat/completions                                              │
-│  ├── /completions                                                   │
-│  ├── /embeddings                                                    │
-│  └── /images/generations                                            │
 ├─────────────────────────────────────────────────────────────────────┤
 │  Policy Fragments                                                   │
 │  ├── set-backend-pools (dynamic pool routing)                       │
 │  ├── set-backend-authorization (managed identity/API key)           │
 │  ├── set-target-backend-pool (load balancing)                       │
-│  └── set-llm-requested-model (model extraction)                     │
+│  ├── set-llm-requested-model (model extraction)                     │
+│  └── get-available-models (Foundry support)                         │
 ├─────────────────────────────────────────────────────────────────────┤
 │  Backend Pools                                                      │
 │  ├── pool-gpt-4o (multiple backends)                                │
 │  └── pool-gpt-4o-mini (multiple backends)                           │
 ├─────────────────────────────────────────────────────────────────────┤
 │  Backends                                                           │
-│  ├── llm-foundry-east-us (AI Foundry)                               │
-│  ├── llm-foundry-west-us (AI Foundry)                               │
+│  ├── llm-foundry-east-us (Microsoft Foundry)                               │
+│  ├── llm-foundry-west-us (Microsoft Foundry)                               │
 │  └── llm-openai-sweden (Azure OpenAI)                               │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -43,9 +42,11 @@ The LLM Backend Onboarding deployment enables dynamic routing of LLM requests ac
 ## Prerequisites
 
 - Existing APIM instance deployed via the AI Hub Gateway Solution Accelerator
-- APIM Managed Identity with appropriate permissions
-- At least one existing LLM backend (Azure OpenAI, AI Foundry, or external)
+- APIM Managed Identity with appropriate permissions on target LLM backends
+- At least one existing LLM backend (Azure OpenAI, Microsoft Foundry, or external)
 - Azure CLI and Bicep CLI installed
+
+>NOTE: This onboarding script does not grant any permissions to target Azure backends (like Microsoft Foundry). Ensure that APIM user managed identity has at least `Cognitive Services User` role assignment on the target backend.
 
 ## Quick Start
 
@@ -63,30 +64,42 @@ Edit the parameter file with your backend configuration:
 ```bicep
 param llmBackendConfig = [
   {
-    backendId: 'foundry-east-us'
+    backendId: 'aif-citadel-primary'
     backendType: 'ai-foundry'
-    endpoint: 'https://my-foundry-project.eastus.models.ai.azure.com'
+    endpoint: 'https://aif-kclom7nxzysjg-0.services.ai.azure.com/models'
     authScheme: 'managedIdentity'
-    supportedModels: ['gpt-4o', 'gpt-4o-mini']
+    supportedModels: [
+      { name: 'gpt-4o', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2024-11-20' }
+      { name: 'gpt-4o-mini', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2024-07-18' }
+      { name: 'DeepSeek-R1', sku: 'GlobalStandard', capacity: 1, modelFormat: 'DeepSeek', modelVersion: '1' }
+      { name: 'Phi-4', sku: 'GlobalStandard', capacity: 1, modelFormat: 'Microsoft', modelVersion: '3' }
+      { name: 'text-embedding-3-large', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '1' }
+    ]
     priority: 1
     weight: 100
   }
   {
-    backendId: 'foundry-west-us'
+    backendId: 'aif-citadel-secondary'
     backendType: 'ai-foundry'
-    endpoint: 'https://my-foundry-project.westus.models.ai.azure.com'
+    endpoint: 'https://aif-kclom7nxzysjg-1.services.ai.azure.com/models'
     authScheme: 'managedIdentity'
-    supportedModels: ['gpt-4o', 'gpt-4o-mini']
-    priority: 1
-    weight: 100
+    supportedModels: [
+      { name: 'gpt-5', sku: 'GlobalStandard', capacity: 50, modelFormat: 'OpenAI', modelVersion: '1' }
+      { name: 'DeepSeek-R1', sku: 'GlobalStandard', capacity: 1, modelFormat: 'DeepSeek', modelVersion: '1' }
+      { name: 'text-embedding-3-large', sku: 'GlobalStandard', capacity: 50, modelFormat: 'OpenAI', modelVersion: '1' }
+    ]
+    priority: 2
+    weight: 50
   }
 ]
 ```
 
 ### 3. Deploy
 
+The below command deploys the LLM Backend Onboarding resources to your governance hub and with the specified parameter file `llm-onboarding-dev-local.bicepparam` and set location:
+
 ```bash
-az deployment sub create --name llm-onboarding-deployment --location swedencentral --template-file main.bicep --parameters llm-onboarding-dev-local.bicepparam
+az deployment sub create --name llm-onboarding-deployment --location REPLACE --template-file main.bicep --parameters llm-onboarding-dev-local.bicepparam
 ```
 
 ## Configuration Reference
@@ -100,12 +113,12 @@ az deployment sub create --name llm-onboarding-deployment --location swedencentr
 | `endpoint` | string | Yes | Full URL to the backend service |
 | `authScheme` | string | Yes | Authentication: `managedIdentity`, `apiKey`, or `token` |
 | `supportedModels` | array | Yes | List of model names this backend supports |
-| `priority` | int | No | Priority for load balancing (lower = higher priority) |
-| `weight` | int | No | Weight for weighted round-robin (default: 100) |
+| `priority` | int | No | Priority for load balancing (lower = higher priority). Used when load balancing across multiple backends |
+| `weight` | int | No | Weight for weighted round-robin (default: 100). Used when load balancing across multiple backends |
 
-### Backend Types
+### Backend types examples
 
-#### AI Foundry (`ai-foundry`)
+#### Microsoft Foundry (`ai-foundry`)
 ```bicep
 {
   backendId: 'foundry-instance'
@@ -142,7 +155,7 @@ az deployment sub create --name llm-onboarding-deployment --location swedencentr
 
 | Scheme | Description | Use Case |
 |--------|-------------|----------|
-| `managedIdentity` | Azure AD token via managed identity | Azure OpenAI, AI Foundry |
+| `managedIdentity` | Azure AD token via managed identity | Azure OpenAI, Microsoft Foundry (uses APIM managed identity which must have permission) |
 | `apiKey` | Static API key in named value | External providers |
 | `token` | Bearer token from named value | OAuth-based services |
 
@@ -160,13 +173,13 @@ Configure priority to create failover chains:
     backendId: 'primary-backend'
     priority: 1  // Primary
     weight: 100
-    supportedModels: ['gpt-4o']
+    supportedModels: [...]
   }
   {
     backendId: 'secondary-backend'
     priority: 2  // Failover
     weight: 100
-    supportedModels: ['gpt-4o']
+    supportedModels: [...]
   }
 ]
 ```
@@ -181,13 +194,13 @@ Configure weights for proportional distribution:
     backendId: 'high-capacity'
     priority: 1
     weight: 70  // 70% of traffic
-    supportedModels: ['gpt-4o']
+    supportedModels: [...]
   }
   {
     backendId: 'standard-capacity'
     priority: 1
     weight: 30  // 30% of traffic
-    supportedModels: ['gpt-4o']
+    supportedModels: [...]
   }
 ]
 ```
@@ -200,66 +213,9 @@ Each backend is configured with circuit breaker rules:
 - **5xx (Server Error)**: Trips after 3 occurrences in 10 seconds
 - **Recovery**: Automatic after 10 seconds
 
-## Universal LLM API
-
-The optional Universal LLM API provides a unified endpoint supporting both OpenAI and Azure Models Inference patterns.
-
-### Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/chat/completions` | POST | Chat completions |
-| `/completions` | POST | Text completions |
-| `/embeddings` | POST | Text embeddings |
-| `/images/generations` | POST | Image generation |
-
-### Configuration
-
-```bicep
-param deployUniversalLlmApi = true
-param inferenceAPIPath = '/inference'
-param inferenceAPIType = 'openai'  // or 'models-inference'
-```
-
-## Usage Examples
-
-### Using with Azure OpenAI SDK
-
-```python
-from openai import AzureOpenAI
-
-client = AzureOpenAI(
-    azure_endpoint="https://your-apim.azure-api.net",
-    api_key="your-subscription-key",
-    api_version="2024-10-21"
-)
-
-response = client.chat.completions.create(
-    model="gpt-4o",
-    messages=[{"role": "user", "content": "Hello!"}]
-)
-```
-
-### Using with REST API
-
-```bash
-curl -X POST "https://your-apim.azure-api.net/models/chat/completions" \
-  -H "Content-Type: application/json" \
-  -H "api-key: your-key" \
-  -d '{
-    "model": "gpt-4o",
-    "messages": [{"role": "user", "content": "Hello!"}]
-  }'
-```
-
 ## Validation
 
-Use the validation notebook to test your deployment:
-
-```bash
-cd validation
-jupyter notebook llm-backend-onboarding-tests.ipynb
-```
+Use the validation notebook [llm-backend-onboarding-runner.ipynb](../validation/llm-backend-onboarding-runner.ipynb) to test your deployment:
 
 The notebook validates:
 - Backend configuration
@@ -267,7 +223,6 @@ The notebook validates:
 - Load balancing behavior
 - Circuit breaker failover
 - Multi-model routing
-- Latency performance
 
 ## Troubleshooting
 
@@ -312,7 +267,5 @@ bicep/infra/llm-backend-onboarding/
         ├── set-backend-authorization.xml
         ├── set-target-backend-pool.xml
         ├── set-llm-requested-model.xml
-        ├── set-llm-usage.xml
-        ├── universal-llm-openapi.json
-        └── models-inference-openapi.json
+        └── get-available-models.xml
 ```

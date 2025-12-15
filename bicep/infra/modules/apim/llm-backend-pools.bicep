@@ -29,11 +29,23 @@ param tags object = {}
 //    VARIABLES
 // ------------------
 
+// Extract model names from supportedModels objects for each backend
+// supportedModels can be either array of strings (legacy) or array of objects with 'name' property (new)
+var normalizedBackendDetails = [for backend in backendDetails: {
+  backendId: backend.backendId
+  backendType: backend.backendType
+  resourceId: backend.resourceId
+  priority: backend.priority
+  weight: backend.weight
+  // Extract model names - handle both string arrays and object arrays
+  modelNames: map(backend.supportedModels, m => m.name)
+}]
+
 /**
  * Group backends by supported models to create backend pools
  * This logic creates a map where each model has an array of backends that support it
  */
-var modelToBackendsMap = reduce(backendDetails, {}, (acc, backend) => union(acc, reduce(backend.supportedModels, {}, (modelAcc, model) => union(modelAcc, {
+var modelToBackendsMap = reduce(normalizedBackendDetails, {}, (acc, backend) => union(acc, reduce(backend.modelNames, {}, (modelAcc, model) => union(modelAcc, {
   '${model}': union(
     contains(acc, model) ? acc[model] : [],
     [

@@ -20,6 +20,9 @@ param policyFragmentConfig object
 @description('User-assigned managed identity client ID for authentication')
 param managedIdentityClientId string
 
+@description('LLM backend configuration with model metadata for available models response')
+param llmBackendConfig array = []
+
 // ------------------
 //    VARIABLES
 // ------------------
@@ -45,6 +48,20 @@ backendPools.Add(pool_INDEX);
 var backendPoolsCode = join(backendPoolsArray, '\n')
 
 /**
+ * Generate model deployments code for the get-available-models fragment
+ * Each backend generates code for all its supported models (with per-model metadata)
+ * supportedModels is an array of objects: { name, sku?, capacity?, modelFormat?, modelVersion? }
+ */
+var modelDeploymentsCodeResult = reduce(llmBackendConfig, { code: '', index: 0 }, (acc, config) => 
+  reduce(config.supportedModels, acc, (modelAcc, model) => {
+    code: '${modelAcc.code}\n// Model: ${model.name} from backend: ${config.backendId}\nvar deployment_${modelAcc.index} = new JObject()\n{\n    { "id", "${config.backendId}" },\n    { "type", "${config.backendType}" },\n    { "name", "${model.name}" },\n    { "sku", new JObject() { { "name", "${model.?sku ?? 'Standard'}" }, { "capacity", ${model.?capacity ?? 100} } } },\n    { "properties", new JObject() {\n        { "model", new JObject() { { "format", "${model.?modelFormat ?? 'OpenAI'}" }, { "name", "${model.name}" }, { "version", "${model.?modelVersion ?? '1'}" } } },\n        { "capabilities", new JObject() { { "chatCompletion", "true" } } },\n        { "provisioningState", "Succeeded" }\n    }}\n};\nmodelDeployments.Add(deployment_${modelAcc.index});'
+    index: modelAcc.index + 1
+  })
+)
+
+var modelDeploymentsCode = modelDeploymentsCodeResult.code
+
+/**
  * Complete policy fragment XML with backend pools configuration
  */
 var setBackendPoolsFragmentXml = loadTextContent('./policies/frag-set-backend-pools.xml')
@@ -55,6 +72,14 @@ var updatedSetBackendPoolsFragmentXml = replace(setBackendPoolsFragmentXml, '//{
  * Enhanced authorization fragment that supports multiple backend types
  */
 var setBackendAuthorizationFragmentXml = loadTextContent('./policies/frag-set-backend-authorization.xml')
+
+/**
+ * Get available models fragment template
+ */
+var getAvailableModelsFragmentTemplate = loadTextContent('./policies/frag-get-available-models.xml')
+
+// Inject generated model deployments code into available models template
+var updatedGetAvailableModelsFragmentXml = replace(getAvailableModelsFragmentTemplate, '//{modelDeploymentsCode}', modelDeploymentsCode)
 
 // ------------------
 //    RESOURCES
@@ -130,6 +155,20 @@ resource setLLMRequestedModelPolicyFragment 'Microsoft.ApiManagement/service/pol
   }
 }
 
+/**
+ * Policy Fragment: Get Available Models
+ * Returns a JSON response listing all available model deployments with their capabilities
+ */
+resource getAvailableModelsFragment 'Microsoft.ApiManagement/service/policyFragments@2024-06-01-preview' = {
+  parent: apimService
+  name: 'get-available-models'
+  properties: {
+    description: 'Returns a JSON response listing all available model deployments with their capabilities'
+    value: updatedGetAvailableModelsFragmentXml
+    format: 'rawxml'
+  }
+}
+
 // ------------------
 //    OUTPUTS
 // ------------------
@@ -142,6 +181,9 @@ output setBackendAuthorizationFragmentName string = setBackendAuthorizationFragm
 
 @description('Name of the set-target-backend-pool fragment')
 output setTargetBackendPoolFragmentName string = setTargetBackendPoolPolicyFragment.name
+
+@description('Name of the get-available-models fragment')
+output getAvailableModelsFragmentName string = getAvailableModelsFragment.name
 
 @description('Generated backend pools configuration code')
 output backendPoolsCode string = backendPoolsCode

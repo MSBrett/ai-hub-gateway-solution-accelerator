@@ -1,0 +1,28 @@
+<fragment>
+    <!--
+        Fragment: Get Available Models
+        Purpose: Returns a JSON response listing all available model deployments with their capabilities
+        
+        Expected Input Variables: None (uses static configuration generated at deployment time)
+        
+        Output: HTTP 200 response with JSON body containing model deployment information
+        
+        Usage: Include this fragment in an API operation to return available models:
+        <include-fragment fragment-id="get-available-models" />
+    -->
+    <return-response>
+        <set-status code="200" reason="OK" />
+        <set-header name="Content-Type" exists-action="override">
+            <value>application/json</value>
+        </set-header>
+        <set-body>@{
+            JObject response = new JObject();
+            JArray modelDeployments = new JArray();
+            
+            //{modelDeploymentsCode}
+            
+            response["value"] = modelDeployments;
+            return response.ToString();
+        }</set-body>
+    </return-response>
+</fragment>

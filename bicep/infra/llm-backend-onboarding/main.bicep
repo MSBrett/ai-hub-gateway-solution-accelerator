@@ -35,7 +35,12 @@ param apimManagedIdentity object
   - backendType: 'ai-foundry' | 'azure-openai' | 'external'
   - endpoint: Base URL of the LLM service (e.g., https://xxx.services.ai.azure.com/models)
   - authScheme: 'managedIdentity' | 'apiKey' | 'token'
-  - supportedModels: Array of model names (e.g., ['gpt-4', 'gpt-4-turbo'])
+  - supportedModels: Array of model objects, each with:
+    - name: Model name (required)
+    - sku: (Optional) SKU name for deployment, default 'Standard'
+    - capacity: (Optional) Capacity/TPM quota, default 100
+    - modelFormat: (Optional) Model format identifier, default 'OpenAI'
+    - modelVersion: (Optional) Version of the model, default '1'
   - priority: (Optional) 1-5, default 1 (lower = higher priority)
   - weight: (Optional) 1-1000, default 100 (higher = more traffic)
   '''
@@ -45,7 +50,10 @@ param apimManagedIdentity object
       backendType: 'ai-foundry'
       endpoint: 'https://my-foundry.services.ai.azure.com/models'
       authScheme: 'managedIdentity'
-      supportedModels: ['gpt-4o', 'gpt-4o-mini']
+      supportedModels: [
+        { name: 'gpt-4o', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2024-11-20' }
+        { name: 'gpt-4o-mini', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2024-07-18' }
+      ]
       priority: 1
       weight: 100
     }
@@ -129,6 +137,7 @@ module llmPolicyFragments 'modules/llm-policy-fragments.bicep' = {
     apimServiceName: apim.name
     policyFragmentConfig: llmBackendPools.outputs.policyFragmentConfig
     managedIdentityClientId: managedIdentity.properties.clientId
+    llmBackendConfig: llmBackendConfig
   }
 }
 
@@ -178,4 +187,5 @@ output policyFragments object = {
   setBackendPools: llmPolicyFragments.outputs.setBackendPoolsFragmentName
   setBackendAuthorization: llmPolicyFragments.outputs.setBackendAuthorizationFragmentName
   setTargetBackendPool: llmPolicyFragments.outputs.setTargetBackendPoolFragmentName
+  getAvailableModels: llmPolicyFragments.outputs.getAvailableModelsFragmentName
 }

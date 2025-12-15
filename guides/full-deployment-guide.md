@@ -140,6 +140,10 @@ cd ai-hub-citadel-deployment # it may differ if you used git clone
 
 ```
 
+Once you have the Infrastructure-as-Code files, proceed to configure your deployment based on the following strategies.
+
+You can perform the deployment using either `azd up` (recommended) or `az deployment sub create` commands.
+
 ### 1. Parameter Files Strategy
 
 AI Citadel Governance Hub uses **Bicep parameter files (.bicepparam)** for environment-specific configurations.
@@ -212,6 +216,17 @@ az deployment sub create \
 
 This automatically picks up the `main.bicepparam` file. You can override specific parameters using environment variables or by modifying the `main.bicepparam` file directly.
 
+```bash
+# Authenticate to Azure
+# append --tenant-id <your-tenant-id> if needed
+azd auth login
+
+# Initialize environment
+azd env new ai-hub-citadel-dev-01
+
+# Provision and deploy everything based on defaults
+azd up
+```
 
 ---
 
@@ -449,7 +464,7 @@ For **StandardV2/PremiumV2 SKU** (Private Endpoint):
 # Private endpoint will be created
 ```
 
-Detailed guide: [Bring Your Own Network](./bring-your-own-network.md)
+Detailed guide: [Bring Your Own Network](./network-approach.md)
 
 ---
 
@@ -457,76 +472,54 @@ Detailed guide: [Bring Your Own Network](./bring-your-own-network.md)
 
 #### AI Foundry Configuration
 
-AI Citadel can deploy **AI Foundry instances** with model deployments automatically.
+AI Citadel can deploy **AI Foundry instances** with model deployments as part of the primary landing zone provisioning.
 
-##### Single Instance Deployment
+Input parameters are separated into two parts:
+
+##### Foundry instances deployment
 
 ```bicep
+// AI Foundry instances configuration array
 param aiFoundryInstances = [
   {
-    name: ''  // Auto-generated
-    location: 'eastus'
+    name: readEnvironmentVariable('AI_FOUNDRY_RESOURCE_NAME', '')
+    location: readEnvironmentVariable('AZURE_LOCATION', 'eastus')
+    customSubDomainName: ''
+    defaultProjectName: 'citadel-governance-project'
+  }
+  {
+    name: readEnvironmentVariable('AI_FOUNDRY_RESOURCE_NAME', '')
+    location: 'eastus2'
     customSubDomainName: ''
     defaultProjectName: 'citadel-governance-project'
   }
 ]
+```
 
+The above, creates two Foundry instances in `eastus` and `eastus2` regions as examples.
+
+This allows you to deploy models in multiple regions for geo-redundancy, added capacity or accessing restricted regional models.
+
+###### Foundry model deployments
+
+```bicep
+// AI Foundry model deployments configuration
 param aiFoundryModelsConfig = [
-  {
-    name: 'gpt-4o'
-    publisher: 'OpenAI'
-    version: '2024-11-20'
-    sku: 'GlobalStandard'
-    capacity: 100
-    aiserviceIndex: 0  // Deploy to first instance
-  }
   {
     name: 'gpt-4o-mini'
     publisher: 'OpenAI'
     version: '2024-07-18'
+    sku: 'GlobalStandard'
+    capacity: 100
+    aiserviceIndex: 0 // First instance in aiFoundryInstances array
+  }
+  {
+    name: 'gpt-4o'
+    publisher: 'OpenAI'
+    version: '2024-11-20'
     sku: 'GlobalStandard'
     capacity: 100
     aiserviceIndex: 0
-  }
-]
-```
-
-##### Multi-Instance Deployment (Geo-Redundancy)
-
-```bicep
-param aiFoundryInstances = [
-  {
-    name: 'aif-citadel-eastus'
-    location: 'eastus'
-    customSubDomainName: 'citadel-eastus'
-    defaultProjectName: 'production-project'
-  }
-  {
-    name: 'aif-citadel-westus'
-    location: 'westus'
-    customSubDomainName: 'citadel-westus'
-    defaultProjectName: 'production-project'
-  }
-]
-
-param aiFoundryModelsConfig = [
-  // Deploy to BOTH instances (omit aiserviceIndex)
-  {
-    name: 'gpt-4o'
-    publisher: 'OpenAI'
-    version: '2024-11-20'
-    sku: 'GlobalStandard'
-    capacity: 200
-    // No aiserviceIndex = deployed to all instances
-  }
-  // Deploy to specific instance
-  {
-    name: 'gpt-4o-mini'
-    publisher: 'OpenAI'
-    version: '2024-07-18'
-    sku: 'GlobalStandard'
-    capacity: 100
-    aiserviceIndex: 0  // Only eastus
   }
   {
     name: 'DeepSeek-R1'
@@ -534,36 +527,60 @@ param aiFoundryModelsConfig = [
     version: '1'
     sku: 'GlobalStandard'
     capacity: 1
-    aiserviceIndex: 1  // Only westus
+    aiserviceIndex: 0
+  }
+  {
+    name: 'Phi-4'
+    publisher: 'Microsoft'
+    version: '3'
+    sku: 'GlobalStandard'
+    capacity: 1
+    aiserviceIndex: 0
+  }
+  {
+    name: 'text-embedding-3-large'
+    publisher: 'OpenAI'
+    version: '1'
+    sku: 'GlobalStandard'
+    capacity: 100
+    aiserviceIndex: 0
+  }
+  {
+    name: 'gpt-5'
+    publisher: 'OpenAI'
+    version: '2025-08-07'
+    sku: 'GlobalStandard'
+    capacity: 100
+    aiserviceIndex: 1 // Second instance in aiFoundryInstances array
+  }
+  {
+    name: 'DeepSeek-R1'
+    publisher: 'DeepSeek'
+    version: '1'
+    sku: 'GlobalStandard'
+    capacity: 1
+    aiserviceIndex: 1
+  }
+  {
+    name: 'text-embedding-3-large'
+    publisher: 'OpenAI'
+    version: '1'
+    sku: 'GlobalStandard'
+    capacity: 100
+    aiserviceIndex: 1
   }
 ]
 ```
 
-##### Available Model Types
-
-**Foundry Models:**
-Check Microsoft Foundry model catalog to understand the available models and versions.
-- `gpt-4o` - Latest GPT-4 Omni (multimodal)
-- `gpt-4o-mini` - Cost-optimized GPT-4 Omni
-- `text-embedding-3-large` - Latest embeddings
-- `gpt-image-1` - Image generation
-- `DeepSeek-R1` - Document search and retrieval
-- `gpt-realtime` - Real-time audio-in audio out model
-
-**Deployment SKUs:**
-- `GlobalStandard` - Global deployment (recommended)
-- `Standard` - Regional deployment
-- `ProvisionedManaged` - Reserved capacity
+>NOTE: Ensure that your target subscription has sufficient quota for the selected models.
 
 ##### Disable Microsoft Foundry Model deployment
 
-To skip Microsoft Foundry models deployment:
+If you are planning to leverage existing model deployments or you are planning to provision the LLMs separately, you can skip model deployment during Citadel provisioning. 
 
 ```bicep
-param aiFoundryModelsConfig = []
+param aiFoundryModelsConfig = [] // No models will be deployed as part of AI Citadel primary deployment
 ```
-
-You can add Microsoft Foundry models later or use existing deployment instances.
 
 ---
 
@@ -575,10 +592,7 @@ You can add Microsoft Foundry models later or use existing deployment instances.
 
 ```bicep
 param useExistingLogAnalytics = false
-param logAnalyticsName = ''  // Auto-generated: log-abc123def
-
-// Private Link Scope (optional)
-param useAzureMonitorPrivateLinkScope = false
+param logAnalyticsName = ''  // Auto-generated if empty or supply a compliant name.
 ```
 
 **Benefits:**
@@ -589,11 +603,11 @@ param useAzureMonitorPrivateLinkScope = false
 
 **Typical Setup:**
 ```
-┌────────────────┐  ┌────────────────┐  ┌────────────────┐
-│ LAW Dev        │  │ LAW Staging    │  │ LAW Prod       │
+┌────────────────┐  ┌────────────────┐  ┌─────────────────┐
+│ LAW Dev        │  │ LAW Staging    │  │ LAW Prod        │
 │ - 30d retention│  │ - 90d retention│  │ - 180d retention│
-│ - Dev RBAC     │  │ - Ops RBAC     │  │ - Audit RBAC   │
-└────────────────┘  └────────────────┘  └────────────────┘
+│ - Dev RBAC     │  │ - Ops RBAC     │  │ - Audit RBAC    │
+└────────────────┘  └────────────────┘  └─────────────────┘
 ```
 
 ---
@@ -609,12 +623,12 @@ param existingLogAnalyticsRG = 'rg-monitoring-prod'
 param existingLogAnalyticsSubscriptionId = '00000000-0000-0000-0000-000000000000'
 ```
 
+>NOTE: Log Analytics can exists in a different subscription than the Citadel governance hub deployment subscription.
+
 **Benefits:**
 - ✅ Centralized logging across all environments
 - ✅ Integration with central SIEM
 - ✅ Cross-environment correlation
-- ✅ Unified dashboards and alerting
-- ✅ Cost optimization (single workspace)
 - ✅ Compliance and audit requirements
 
 **Typical Setup:**
@@ -634,21 +648,6 @@ param existingLogAnalyticsSubscriptionId = '00000000-0000-0000-0000-000000000000
     │ Citadel│         │Citadel │        │ Citadel│
     └────────┘         └────────┘        └────────┘
 ```
-
-**Cross-Subscription Support:**
-
-Citadel supports Log Analytics in a different subscription:
-
-```bicep
-param useExistingLogAnalytics = true
-param existingLogAnalyticsName = 'law-platform-shared'
-param existingLogAnalyticsRG = 'rg-platform-monitoring'
-param existingLogAnalyticsSubscriptionId = 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
-```
-
-**Required Permissions:**
-- Reader on Log Analytics workspace
-- Contributor on Application Insights (created in target subscription)
 
 ---
 
@@ -671,57 +670,46 @@ param entraAudience = 'api://citadel-gateway'
 3. Create client secret (store in Key Vault)
 4. Update parameter file
 
-Guide: [Entra ID Authentication](./entraid-auth-validation.md)
+Guide: [Entra ID Authentication](.)
 
 #### Network Security
 
-**Production Configuration:**
+All applicable network security settings are configurable through the parameters of the accelerator:
+
+**Suggested Production Configuration:**
 ```bicep
 // APIM Security
-param apimNetworkType = 'Internal'  // No public access
+param apimNetworkType = 'Internal'  // No public access (applies to APIM Developer and Premium SKUs)
 param apimV2UsePrivateEndpoint = true
 param apimV2PublicNetworkAccess = false
 
 // Service Network Access
 param cosmosDbPublicAccess = 'Disabled'
-param eventHubNetworkAccess = 'Disabled'  // Enable during deployment, disable after
+param eventHubNetworkAccess = 'Disabled'  // Enable during deployment, disable after for APIM Standardv2 and PremiumV2 SKUs
 param languageServiceExternalNetworkAccess = 'Disabled'
 param aiContentSafetyExternalNetworkAccess = 'Disabled'
 
-// Private Link Scope
-param useAzureMonitorPrivateLinkScope = true
-```
+...
 
-#### Data Protection
-
-**PII Detection & Masking:**
-```bicep
-param enableAIGatewayPiiRedaction = true
-```
-
-Automatically detects and redacts:
-- Email addresses
-- Phone numbers
-- SSN/Tax IDs
-- Credit card numbers
-- Custom patterns
-
-**Content Safety:**
-```bicep
-// Enabled by default
-// Protects against:
-// - Harmful content
-// - Prompt injection attacks
-// - Jailbreak attempts
 ```
 
 ---
 
 ## 🚀 Deployment Execution
 
+It is recommended to leverage Azure Developer CLI (`azd`) for simplified deployments of both the infrastructure and application (Logic Apps workflows).
+
 ### Method 1: Azure Cloud Shell
 
 **Best for:** Quick deployments, testing, no local setup
+
+#### Using Azure Developer CLI (azd):
+
+```bash
+
+```
+
+#### Using Azure CLI:
 
 ```bash
 # 1. Open Azure Cloud Shell
@@ -747,6 +735,8 @@ az deployment sub show \
   --name citadel-<timestamp> \
   --query properties.provisioningState
 ```
+
+>NOTE: Using `az deployment sub create` will only provision the infrastructure. You still will need to deploy the `Logic App` workflows separately after the infrastructure is ready.
 
 ---
 
@@ -792,208 +782,9 @@ az deployment sub create \
 
 ---
 
-## 🌍 Environment-Specific Configurations
-
-### Development Environment
-
-**File:** `main.parameters.dev.bicepparam`
-
-```bicep
-using './main.bicep'
-
-param environmentName = 'citadel-dev'
-param location = 'eastus'
-param tags = {
-  'azd-env-name': 'citadel-dev'
-  Environment: 'Development'
-  CostCenter: 'Engineering'
-}
-
-// Cost-optimized SKUs
-param apimSku = 'Developer'
-param apimSkuUnits = 1
-param cosmosDbRUs = 400
-param eventHubCapacityUnits = 1
-
-// Simplified networking
-param apimNetworkType = 'External'
-param cosmosDbPublicAccess = 'Enabled'
-param eventHubNetworkAccess = 'Enabled'
-
-// Features
-param enableAIFoundry = true
-param enableAPICenter = false  // Save costs
-param createAppInsightsDashboards = true
-param entraAuth = false  // Simplify testing
-
-// Models
-param aiFoundryModelsConfig = [
-  {
-    name: 'gpt-4o-mini'
-    publisher: 'OpenAI'
-    version: '2024-07-18'
-    sku: 'GlobalStandard'
-    capacity: 50
-    aiserviceIndex: 0
-  }
-]
-```
-
-**Deployment:**
-```bash
-az deployment sub create \
-  --name citadel-dev \
-  --location eastus \
-  --template-file ./bicep/infra/main.bicep \
-  --parameters ./bicep/infra/main.parameters.dev.bicepparam
-```
-
----
-
-### Staging Environment
-
-**File:** `main.parameters.staging.bicepparam`
-
-```bicep
-using './main.bicep'
-
-param environmentName = 'citadel-staging'
-param location = 'eastus'
-param tags = {
-  'azd-env-name': 'citadel-staging'
-  Environment: 'Staging'
-  CostCenter: 'Platform'
-  Criticality: 'Medium'
-}
-
-// Production SKUs with reduced capacity
-param apimSku = 'StandardV2'
-param apimSkuUnits = 1
-param cosmosDbRUs = 1000
-param eventHubCapacityUnits = 2
-
-// Secure networking (mirrors production)
-param useExistingVnet = true
-param vnetName = 'vnet-hub-staging-eastus'
-param existingVnetRG = 'rg-network-staging'
-param apimNetworkType = 'Internal'
-param apimV2UsePrivateEndpoint = true
-param cosmosDbPublicAccess = 'Disabled'
-
-// Use shared Log Analytics
-param useExistingLogAnalytics = true
-param existingLogAnalyticsName = 'law-platform-shared'
-param existingLogAnalyticsRG = 'rg-monitoring-prod'
-
-// Enable all features
-param enableAIFoundry = true
-param enableAPICenter = true
-param createAppInsightsDashboards = true
-param entraAuth = true
-
-// Staging models
-param aiFoundryModelsConfig = [
-  {
-    name: 'gpt-4o'
-    publisher: 'OpenAI'
-    version: '2024-11-20'
-    sku: 'GlobalStandard'
-    capacity: 100
-    aiserviceIndex: 0
-  }
-]
-```
-
----
-
-### Production Environment
-
-**File:** `main.parameters.prod.bicepparam`
-
-```bicep
-using './main.bicep'
-
-param environmentName = 'citadel-prod'
-param location = 'eastus'
-param tags = {
-  'azd-env-name': 'citadel-prod'
-  Environment: 'Production'
-  CostCenter: 'Platform'
-  Criticality: 'High'
-  ComplianceFramework: 'SOC2'
-}
-
-// Production-grade SKUs
-param apimSku = 'PremiumV2'
-param apimSkuUnits = 2
-param cosmosDbRUs = 3000
-param eventHubCapacityUnits = 5
-
-// Secure networking
-param useExistingVnet = true
-param vnetName = 'vnet-hub-prod-eastus'
-param existingVnetRG = 'rg-network-prod'
-param apimNetworkType = 'Internal'
-param apimV2UsePrivateEndpoint = true
-param apimV2PublicNetworkAccess = false
-param cosmosDbPublicAccess = 'Disabled'
-param eventHubNetworkAccess = 'Disabled'
-param useAzureMonitorPrivateLinkScope = true
-
-// Use shared Log Analytics
-param useExistingLogAnalytics = true
-param existingLogAnalyticsName = 'law-platform-prod'
-param existingLogAnalyticsRG = 'rg-monitoring-prod'
-
-// Enable all features
-param enableAIFoundry = true
-param enableAPICenter = true
-param createAppInsightsDashboards = true
-param entraAuth = true
-param entraTenantId = '00000000-0000-0000-0000-000000000000'
-param entraClientId = '11111111-2222-3333-4444-555555555555'
-
-// Multi-region AI Foundry
-param aiFoundryInstances = [
-  {
-    name: 'aif-citadel-prod-eastus'
-    location: 'eastus'
-    customSubDomainName: 'citadel-prod-eastus'
-    defaultProjectName: 'production-project'
-  }
-  {
-    name: 'aif-citadel-prod-westus'
-    location: 'westus'
-    customSubDomainName: 'citadel-prod-westus'
-    defaultProjectName: 'production-project'
-  }
-]
-
-param aiFoundryModelsConfig = [
-  {
-    name: 'gpt-4o'
-    publisher: 'OpenAI'
-    version: '2024-11-20'
-    sku: 'GlobalStandard'
-    capacity: 200
-    aiserviceIndex: 0
-  }
-  {
-    name: 'gpt-4o'
-    publisher: 'OpenAI'
-    version: '2024-11-20'
-    sku: 'GlobalStandard'
-    capacity: 200
-    aiserviceIndex: 1
-  }
-]
-```
-
----
-
 ## ✅ Post-Deployment Validation
 
-### 1. Verify Resource Deployment
+### Verify Resource Deployment
 
 ```bash
 # List all resources in resource group
@@ -1007,59 +798,12 @@ az resource list \
 
 ```
 
-### 2. Validate APIM Gateway
+### Validate Governance Hub functionality
 
-```bash
-# Get APIM details
-APIM_NAME=$(az deployment sub show \
-  --name <deployment-name> \
-  --query properties.outputs.APIM_NAME.value -o tsv)
+This repo includes set of validation NoteBooks under `/validation` folder.
 
-APIM_URL=$(az deployment sub show \
-  --name <deployment-name> \
-  --query properties.outputs.APIM_GATEWAY_URL.value -o tsv)
-
-# Test health endpoint
-curl -I $APIM_URL/status-0123456789abcdef
-```
-
-### 3. Test End-to-End Flow
-
-```bash
-# Get subscription key
-SUBSCRIPTION_KEY=$(az apim subscription show \
-  --resource-group $RG_NAME \
-  --service-name $APIM_NAME \
-  --subscription-id master \
-  --query primaryKey -o tsv)
-
-# Test LLM endpoint
-curl -X POST "$APIM_URL/llm/chat/completions" \
-  -H "api-key: $SUBSCRIPTION_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "gpt-4o-mini",
-    "messages": [
-      {"role": "user", "content": "Hello!"}
-    ]
-  }'
-```
-
-### 5. Verify Monitoring
-
-```bash
-# Check Application Insights
-az monitor app-insights component show \
-  --resource-group $RG_NAME \
-  --app appi-apim-* \
-  --query applicationId -o tsv
-
-# Query recent telemetry
-az monitor app-insights query \
-  --app <app-id> \
-  --analytics-query "requests | take 10" \
-  --output table
-```
+- [citadel-governance-hub-primary-tests.ipynb](../validation/citadel-governance-hub-primary-tests.ipynb): Initial discovery of the deployed governance hub and help in creating the first access contract.
+- [llm-backend-onboarding-runner.ipynb](../validation/llm-backend-onboarding-runner.ipynb): Onboard existing LLM backends & configure its routing to the governance hub and validate connectivity.
 
 ---
 
@@ -1072,7 +816,6 @@ Visit the [Deployment Troubleshooting Guide](./#) for common issues and resoluti
 ### Getting Help
 
 - **GitHub Issues:** [Report a bug](https://github.com/Azure-Samples/ai-hub-gateway-solution-accelerator/issues)
-- **Discussions:** [Ask a question](https://github.com/Azure-Samples/ai-hub-gateway-solution-accelerator/discussions)
 
 ---
 
@@ -1080,21 +823,20 @@ Visit the [Deployment Troubleshooting Guide](./#) for common issues and resoluti
 
 **After Successful Deployment:**
 
-1. **Configure AI Services**
-   - [OpenAI Integration](./#)
-   - [AI Search Setup](./#)
-   - [Document Intelligence](./#)
-
-2. **Enable Security**
+- **Enable Security**
    - [Entra ID Authentication](./entraid-auth-validation.md)
    - [PII Detection](./pii-masking-apim.md)
 
-3. **Set Up Monitoring**
+- **Set Up Monitoring**
    - [Power BI Dashboard](./power-bi-dashboard.md)
    - [Alert Configuration](./throttling-events-handling.md)
 
-4. **Onboard Teams**
+- **Onboard Teams**
    - [Citadel Access Contracts](./Citadel-Access-Contracts.md)
+
+- **Deploy LLM Backends**
+   - [Onboard Existing LLMs](./LLM-Backend-Onboarding-Guide.md)
+   - [LLM Routing Architecture](./llm-routing-architecture.md)
 
 ---
 

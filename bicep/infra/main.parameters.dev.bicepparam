@@ -7,7 +7,8 @@ using './main.bicep'
 
 // Basic Configuration
 param environmentName = 'ai-hub-citadel-dev'
-param location = 'eastus'
+param location = 'swedencentral'
+param apicLocation = 'swedencentral'
 param resourceGroupName = ''  // Auto-generated based on environmentName
 param tags = {
   'azd-env-name': 'ai-hub-citadel-dev'
@@ -44,3 +45,7 @@ param useExistingLogAnalytics = false
 // Public network access for easier development
 param cosmosDbPublicAccess = 'Enabled'
 param eventHubNetworkAccess = 'Enabled'
+param keyVaultExternalNetworkAccess = 'Enabled'
+
+// Key Vault SKU (standard is sufficient for dev)
+param keyVaultSkuName = 'standard'

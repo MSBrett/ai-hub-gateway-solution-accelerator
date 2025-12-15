@@ -1,7 +1,13 @@
 <policies>
     <inbound>
-        <base />
-        <include-fragment fragment-id="ai-foundry-deployments" />
+        <!-- CORS Configuration for AI Foundry Compatibility -->
+        <include-fragment fragment-id="ai-foundry-compatibility" />
+        
+        <!-- Get deployments from specific Foundry resource using ARM-->
+        <!--<include-fragment fragment-id="ai-foundry-deployments" />-->
+
+        <!-- Get deployments using Citadel on-boarded backends -->
+        <include-fragment fragment-id="get-available-models" />
     </inbound>
     <backend>
         <base />

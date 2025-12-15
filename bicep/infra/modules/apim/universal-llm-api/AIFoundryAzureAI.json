@@ -23,9 +23,6 @@
         "operationId": "deployments",
         "description": "Get deployments for Azure OpenAI resource for AI Foundry Integration",
         "parameters": [
-          {
-            "$ref": "#/components/parameters/Azure.Core.Foundations.ApiVersionParameter"
-          }
         ],
         "responses": {
           "200": {

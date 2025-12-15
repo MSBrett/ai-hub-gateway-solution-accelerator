@@ -40,7 +40,7 @@ resource llmBackends 'Microsoft.ApiManagement/service/backends@2024-06-01-previe
   name: config.backendId
   parent: apimService
   properties: {
-    description: 'LLM Backend: ${config.backendType} - ${config.backendId} - Supports models: ${join(config.supportedModels, ', ')}'
+    description: 'LLM Backend: ${config.backendType} - ${config.backendId} - Supports models: ${join(map(config.supportedModels, m => m.name), ', ')}'
     url: config.endpoint
     protocol: 'http'
     
