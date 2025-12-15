@@ -9,39 +9,39 @@ The following policy snippets can be applied as needed for the product policy ac
 ### Model Access Control Policy
 
 ```xml
-<!-- Inboud Section of the Product Policy -->
-<!-- Extract and validate model parameter from request -->
-<include-fragment fragment-id="set-llm-requested-model" />
-<!-- Restrict access for this product to specific models -->
-<choose>
-    <when condition="@{
-        var allowedModels = new string[] { "gpt-4o", "deepseek-r1" };
-        var requestedModel = (context.Variables.GetValueOrDefault<string>("requestedModel") ?? string.Empty).ToLowerInvariant();
-        return !allowedModels.Any(m => m.ToLowerInvariant() == requestedModel);
-    }">
-        <return-response>
-            <set-status code="401" reason="Unauthorized model access" />
-        </return-response>
-    </when>
-</choose>
+<inbound>
+    <!-- Extract and validate model parameter from request -->
+    <include-fragment fragment-id="set-llm-requested-model" />
+    <!-- Restrict access for this product to specific models -->
+    <choose>
+        <when condition="@{
+            var allowedModels = new string[] { "gpt-4o", "deepseek-r1" };
+            var requestedModel = (context.Variables.GetValueOrDefault<string>("requestedModel") ?? string.Empty).ToLowerInvariant();
+            return !allowedModels.Any(m => m.ToLowerInvariant() == requestedModel);
+        }">
+            <return-response>
+                <set-status code="401" reason="Unauthorized model access" />
+            </return-response>
+        </when>
+    </choose>
+</inbound>
 ```
 ### Model Capacity Management Policy
 
 The below policy snippet, enforces a token limit per subscription but for all models being access via this product.
 
 ```xml
-<!-- Inboud Section of the Product Policy -->
-
-<!-- Capacity management - Subscription Level: allow only assigned tpm for each HR use case subscription -->
-<llm-token-limit counter-key="@(context.Subscription.Id)" 
-    tokens-per-minute="300" 
-    estimate-prompt-tokens="false" 
-    tokens-consumed-header-name="consumed-tokens" 
-    remaining-tokens-header-name="remaining-tokens" 
-    token-quota="100000" 
-    token-quota-period="Monthly" 
-    retry-after-header-name="retry-after" />
-
+<inbound>
+    <!-- Capacity management - Subscription Level: allow only assigned tpm for each HR use case subscription -->
+    <llm-token-limit counter-key="@(context.Subscription.Id)" 
+        tokens-per-minute="300" 
+        estimate-prompt-tokens="false" 
+        tokens-consumed-header-name="consumed-tokens" 
+        remaining-tokens-header-name="remaining-tokens" 
+        token-quota="100000" 
+        token-quota-period="Monthly" 
+        retry-after-header-name="retry-after" />
+</inbound>
 ```
 
 To further control capacity management per model per subscription, you can extend the above policy snippet to include model specific token limits by leveraging the `requestedModel` variable set via the `set-llm-requested-model` fragment.
@@ -143,7 +143,7 @@ TBD
 Collecting throttling events can help in setting up alerts in Application Insights. You can configure the following variables in the product policy outbound section to customize the throttling event details:
 
 ```xml
-<outbound>
+<on-error>
     <base />
     <!-- Raising throttling events (http 429 only) can help in setting up alerts in App Insights -->
     <!-- Set the following variables to customize the throttling event details -->
@@ -151,24 +151,31 @@ Collecting throttling events can help in setting up alerts in Application Insigh
     <set-variable name="deploymentName" value="@((string)context.Variables.GetValueOrDefault<string>("requestedModel", "DefaultModel"))" />
     <set-variable name="appId" value="@((string)context.Variables.GetValueOrDefault<string>("appId", context.Subscription?.Id ?? "Portal-Admin-Sub"))" />
     <include-fragment fragment-id="raise-throttling-events" />
-</outbound>
+</on-error>
 ```
 
 Based on this policy, you can configure alerts in Application Insights to monitor for high throttling events and take necessary actions.
+
+>NOTE: Detailed guide on how to setup throttling events handling can be found in [Throttling Events Handling Guide](./throttling-events-handling.md)
+
 
 ### Content Safety Policy
 
 Content safety can be enforced at a gateway level using the built-in content safety policy. You can configure the content safety policy to block or flag content based on your organization's requirements.
 
 ```xml
-<!-- Failure to pass content safety will result in 403 error -->
-<llm-content-safety backend-id="content-safety-backend" shield-prompt="true">
-    <!-- 0 is most restrictive and can be set up-to 7 -->
-    <categories output-type="EightSeverityLevels">
-        <category name="Hate" threshold="3" />
-        <category name="Violence" threshold="3" />
-    </categories>
-</llm-content-safety>
+<inbound>
+    <!-- Content Safety Policy -->
+    <!-- Failure to pass content safety will result in 403 error -->
+    <llm-content-safety backend-id="content-safety-backend" shield-prompt="true">
+        <!-- 0 is most restrictive and can be set up-to 7 -->
+        <categories output-type="EightSeverityLevels">
+            <category name="Hate" threshold="3" />
+            <category name="Violence" threshold="3" />
+        </categories>
+    </llm-content-safety>
+    <!-- End of Content Safety Policy -->
+</inbound>
 ```
 
 ### OAuth JWT Validation Policy
@@ -179,11 +186,86 @@ TBD
 
 TBD
 
-### PII Redaction Policy
+### PII Detection/Anonymization/Blocking Policy
 
-AI Citadel Gateway supports PII anonymization/deanonymization using built-in PII redaction policy fragments. You can configure the PII redaction policy to redact specific types of PII from the request or response.
+AI Citadel Gateway supports PII various processing features using built-in PII handling policy fragments. 
 
-#### `Inbound` PII Anonymization setup
+- PII Detection
+- PII Anonymization
+- PII Blocking
+- PII Deanonymization
+- PII Logging (used only for testing and debugging purposes)
+
+You can configure the PII handling policy to redact specific types of PII from the request or response.
+
+#### PII Blocking setup
+
+```xml
+<inbound>
+    <!-- PII Detection and Blocking -->
+    <set-variable name="piiBlockingEnabled" value="true" />
+    <!-- Variables required by pii-detection fragment -->
+    <choose>
+        <when condition="@(context.Variables.GetValueOrDefault<string>("piiBlockingEnabled") == "true")">
+            
+            <!-- Configure PII detection settings -->
+            <set-variable name="piiConfidenceThreshold" value="0.75" />
+            <set-variable name="piiEntityCategoryExclusions" value="PersonType,CADriversLicenseNumber" />
+            <set-variable name="piiDetectionLanguage" value="en" /> <!-- Use 'auto' if context have multiple languages -->
+
+            <!-- Configure regex patterns for custom PII detection -->
+            <set-variable name="piiRegexPatterns" value="@{
+                var patterns = new JArray {
+                    new JObject {
+                        ["pattern"] = @"\b\d{4}[- ]?\d{4}[- ]?\d{4}[- ]?\d{4}\b",
+                        ["category"] = "CREDIT_CARD"
+                    },
+                    new JObject {
+                        ["pattern"] = @"\b[A-Z]{2}\d{6}[A-Z]\b",
+                        ["category"] = "PASSPORT_NUMBER"
+                    },
+                    new JObject {
+                        ["pattern"] = @"\b\d{3}[-]?\d{4}[-]?\d{7}[-]?\d{1}\b",
+                        ["category"] = "NATIONAL_ID"
+                    }
+                };
+                return patterns.ToString();
+            }" />
+            <set-variable name="piiInputContent" value="@(context.Request.Body.As<string>(preserveContent: true))" />
+            <!-- Include the PII detection fragment -->
+            <include-fragment fragment-id="pii-detection" />
+            <!-- Block request if PII is detected -->
+            <choose>
+                <when condition="@(context.Variables.GetValueOrDefault<bool>("piiDetected", false))">
+                    <return-response>
+                        <set-status code="400" reason="Bad Request" />
+                        <set-header name="Content-Type" exists-action="override">
+                            <value>application/json</value>
+                        </set-header>
+                        <set-body>@{
+                            var detectedEntities = context.Variables.GetValueOrDefault<string>("piiDetectedEntities", "");
+                            return new JObject(
+                                new JProperty("error", new JObject(
+                                    new JProperty("code", "PII_DETECTED"),
+                                    new JProperty("message", "Request blocked: Personal Identifiable Information (PII) detected in the request."),
+                                    new JProperty("detectedCategories", detectedEntities)
+                                ))
+                            ).ToString();
+                        }</set-body>
+                    </return-response>
+                </when>
+            </choose>
+        </when>
+    </choose>
+    <!-- End of PII Detection and Blocking -->
+</inbound>
+```
+
+#### PII Anonymization/Deanonymization setup
+
+PII is detected and anonymized in the `Inbound` section, and deanonymized in the `Outbound` section.
+
+##### `Inbound` PII Anonymization setup
 
 ```xml
 <inbound>
@@ -227,46 +309,34 @@ AI Citadel Gateway supports PII anonymization/deanonymization using built-in PII
 </inbound>
 ```
 
-#### `Outbound` PII Deanonymization setup
+##### `Outbound` PII Deanonymization setup
 
 ```xml
 <outbound>
-    <!-- PII Detection and Anonymization -->
-    <set-variable name="piiAnonymizationEnabled" value="true" />
-    <!-- Variables required by pii-anonymization fragment -->
+    <!-- PII Deanonymization -->
+    <set-variable name="responseBodyContent" value="@(context.Response.Body.As<string>(preserveContent: true))" />
     <choose>
-        <when condition="@(context.Variables.GetValueOrDefault<string>("piiAnonymizationEnabled") == "true")">
-            <!-- Configure PII detection settings -->
-            <set-variable name="piiConfidenceThreshold" value="0.75" />
-            <set-variable name="piiEntityCategoryExclusions" value="PersonType,CADriversLicenseNumber" />
-            <set-variable name="piiDetectionLanguage" value="en" /> <!-- Use 'auto' if context have multiple languages -->
-
-            <!-- Configure regex patterns for custom PII detection -->
-            <set-variable name="piiRegexPatterns" value="@{
-                var patterns = new JArray {
-                    new JObject {
-                        ["pattern"] = @"\b\d{4}[- ]?\d{4}[- ]?\d{4}[- ]?\d{4}\b",
-                        ["category"] = "CREDIT_CARD"
-                    },
-                    new JObject {
-                        ["pattern"] = @"\b[A-Z]{2}\d{6}[A-Z]\b",
-                        ["category"] = "PASSPORT_NUMBER"
-                    },
-                    new JObject {
-                        ["pattern"] = @"\b\d{3}[-]?\d{4}[-]?\d{7}[-]?\d{1}\b",
-                        ["category"] = "NATIONAL_ID"
-                    }
-                };
-                return patterns.ToString();
-            }" />
-            <set-variable name="piiInputContent" value="@(context.Request.Body.As<string>(preserveContent: true))" />
-            <!-- Include the PII anonymization fragment -->
-            <include-fragment fragment-id="pii-anonymization" />
-            <!-- Replace the request body with anonymized content -->
-            <set-body>@(context.Variables.GetValueOrDefault<string>("piiAnonymizedContent"))</set-body>
+        <when condition="@(context.Variables.GetValueOrDefault<string>("piiAnonymizationEnabled") == "true" && 
+                        context.Variables.ContainsKey("piiMappings"))">
+            <!-- Use stored response body for deanonymization -->
+            <set-variable name="piiDeanonymizeContentInput" value="@(context.Variables.GetValueOrDefault<string>("responseBodyContent"))" />
+            <include-fragment fragment-id="pii-deanonymization" />
+            <!-- Variables required by pii-state-saving fragment -->
+            <set-variable name="piiStateSavingEnabled" value="true" />
+            <set-variable name="originalRequest" value="@(context.Variables.GetValueOrDefault<string>("piiInputContent"))" />
+            <set-variable name="originalResponse" value="@(context.Variables.GetValueOrDefault<string>("responseBodyContent"))" />
+            
+            <!-- Include the PII state saving fragment to push pii detection results to event hub -->
+            <include-fragment fragment-id="pii-state-saving" />
+            
+            <!-- Replace response with deanonymized content -->
+            <set-body>@(context.Variables.GetValueOrDefault<string>("piiDeanonymizedContentOutput"))</set-body>
         </when>
+        <otherwise>
+            <!-- Pass through original response using stored content -->
+            <set-body>@(context.Variables.GetValueOrDefault<string>("responseBodyContent"))</set-body>
+        </otherwise>
     </choose>
-    <!-- End of PII Detection and Anonymization -->
 </outbound>
 ```
 
