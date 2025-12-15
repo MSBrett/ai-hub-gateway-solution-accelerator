@@ -13,6 +13,10 @@ param environmentName string
 @allowed([ 'uaenorth', 'southafricanorth', 'westeurope', 'southcentralus', 'australiaeast', 'canadaeast', 'eastus', 'eastus2', 'francecentral', 'japaneast', 'northcentralus', 'swedencentral', 'switzerlandnorth', 'uksouth' ])
 param location string
 
+@description('Location of the API Center service. Leave blank to use primary location, where API Center is available in that region.')
+@allowed(['', 'australiaeast', 'canadacentral', 'centralindia', 'eastus', 'francecentral', 'swedencentral', 'uksouth', 'westeurope' ])
+param apicLocation string = ''
+
 @description('Tags to be applied to resources.')
 param tags object = { 'azd-env-name': environmentName, 'SecurityControl': 'Ignore' }
 
@@ -87,6 +91,9 @@ param apicServiceName string = ''
 
 @description('Name of the AI Foundry resource. Leave blank to use default naming conventions.')
 param aiFoundryResourceName string = ''
+
+@description('Name of the Azure Key Vault. Leave blank to use default naming conventions.')
+param keyVaultName string = ''
 
 //
 // NETWORKING PARAMETERS - Network configuration and access controls
@@ -193,6 +200,9 @@ param apimV2PrivateEndpointName string = ''
 @description('AI Foundry private endpoint base name. Leave blank to use default naming conventions.')
 param aiFoundryPrivateEndpointName string = ''
 
+@description('Key Vault private endpoint name. Leave blank to use default naming conventions.')
+param keyVaultPrivateEndpointName string = ''
+
 // Services network access configuration
 
 @description('Network type for API Management service. Applies only to Premium and Developer SKUs.')
@@ -224,6 +234,10 @@ param aiContentSafetyExternalNetworkAccess string = 'Disabled'
 @description('AI Foundry external network access.')
 @allowed([ 'Enabled', 'Disabled' ])
 param aiFoundryExternalNetworkAccess string = 'Disabled'
+
+@description('Key Vault external network access.')
+@allowed([ 'Enabled', 'Disabled' ])
+param keyVaultExternalNetworkAccess string = 'Disabled'
 
 @description('Use Azure Monitor Private Link Scope for Log Analytics and Application Insights.')
 param useAzureMonitorPrivateLinkScope bool = false
@@ -286,6 +300,10 @@ param aiContentSafetySkuName string = 'S0'
 @description('SKU for the API Center service.')
 @allowed(['Free', 'Standard'])
 param apicSku string = 'Free'
+
+@description('SKU for the Key Vault service.')
+@allowed(['standard', 'premium'])
+param keyVaultSkuName string = 'standard'
 
 //
 // ACCELERATOR SPECIFIC PARAMETERS - Additional parameters for the solution (should not be modified without careful consideration)
@@ -723,6 +741,27 @@ module languageService 'modules/ai/cognitiveservices.bicep' = {
   }
 }
 
+module keyVault './modules/keyvault/keyvault.bicep' = {
+  name: 'key-vault'
+  scope: resourceGroup
+  params: {
+    keyVaultName: !empty(keyVaultName) ? keyVaultName : '${abbrs.keyVaultVaults}${resourceToken}'
+    location: location
+    tags: tags
+    skuName: keyVaultSkuName
+    publicNetworkAccess: keyVaultExternalNetworkAccess
+    vNetName: useExistingVnet ? vnetExisting.outputs.vnetName : vnet.outputs.vnetName
+    privateEndpointSubnetName: useExistingVnet ? vnetExisting.outputs.privateEndpointSubnetName : vnet.outputs.privateEndpointSubnetName
+    vNetRG: useExistingVnet ? vnetExisting.outputs.vnetRG : vnet.outputs.vnetRG
+    keyVaultPrivateEndpointName: !empty(keyVaultPrivateEndpointName) ? keyVaultPrivateEndpointName : '${abbrs.keyVaultVaults}pe-${resourceToken}'
+    keyVaultDnsZoneName: keyVaultPrivateDnsZoneName
+    dnsZoneRG: !useExistingVnet ? resourceGroup.name : dnsZoneRG
+    dnsSubscriptionId: !empty(dnsSubscriptionId) ? dnsSubscriptionId : subscription().subscriptionId
+    dnsZoneResourceId: existingKeyVaultDnsZoneId
+    apimPrincipalId: apimManagedIdentity.outputs.managedIdentityPrincipalId
+  }
+}
+
 module foundry 'modules/foundry/foundry.bicep' = if(enableAIFoundry) {
   name: 'ai-foundry'
   scope: resourceGroup
@@ -748,6 +787,9 @@ module foundry 'modules/foundry/foundry.bicep' = if(enableAIFoundry) {
     dnsZoneRG: !useExistingVnet ? resourceGroup.name : dnsZoneRG
     dnsSubscriptionId: !empty(dnsSubscriptionId) ? dnsSubscriptionId : subscription().subscriptionId
     dnsZoneResourceId: existingAiServicesDnsZoneId
+    // Key Vault connection parameters
+    keyVaultId: keyVault.outputs.keyVaultId
+    keyVaultUri: keyVault.outputs.keyVaultUri
   }
 }
 
@@ -901,9 +943,23 @@ module apiCenter './modules/apic/apic.bicep' = if(enableAPICenter) {
   params: {
     apicServiceName: !empty(apicServiceName) ? apicServiceName : '${abbrs.apiCenterService}${resourceToken}'
     apicsku: apicSku
-    location: 'swedencentral'
+    location: !empty(apicLocation) ? apicLocation : location
     tags: tags
   }
+}
+
+// Grant AI Foundry resources access to Key Vault (deployed after both Key Vault and Foundry)
+module keyVaultFoundryRbac './modules/keyvault/keyvault-rbac.bicep' = if(enableAIFoundry) {
+  name: 'key-vault-foundry-rbac'
+  scope: resourceGroup
+  params: {
+    keyVaultName: keyVault.outputs.keyVaultName
+    aiFoundryPrincipalIds: foundry.outputs.aiFoundryPrincipalIds
+  }
+  dependsOn: [
+    keyVault
+    foundry
+  ]
 }
 
 output APIM_NAME string = apim.outputs.apimName
@@ -911,3 +967,5 @@ output APIM_AOI_PATH string = apim.outputs.apimOpenaiApiPath
 output APIM_GATEWAY_URL string = apim.outputs.apimGatewayUrl
 output AI_FOUNDRY_SERVICES array = enableAIFoundry ? foundry!.outputs.extendedAIServicesConfig : []
 output LLM_BACKEND_CONFIG array = llmBackendConfig
+output KEY_VAULT_NAME string = keyVault.outputs.keyVaultName
+output KEY_VAULT_URI string = keyVault.outputs.keyVaultUri

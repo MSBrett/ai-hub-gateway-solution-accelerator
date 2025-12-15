@@ -4,7 +4,8 @@ using './main.bicep'
 // BASIC PARAMETERS
 // ============================================================================
 param environmentName = readEnvironmentVariable('AZURE_ENV_NAME', 'citadel-dev')
-param location = readEnvironmentVariable('AZURE_LOCATION', 'eastus')
+param location = readEnvironmentVariable('AZURE_LOCATION', 'swedencentral')
+param apicLocation = readEnvironmentVariable('APIC_LOCATION', 'swedencentral')
 param tags = {
   'azd-env-name': readEnvironmentVariable('AZURE_ENV_NAME', 'citadel-dev')
   SecurityControl: 'Ignore'
@@ -32,6 +33,7 @@ param languageServiceName = readEnvironmentVariable('LANGUAGE_SERVICE_NAME', '')
 param aiContentSafetyName = readEnvironmentVariable('AI_CONTENT_SAFETY_NAME', '')
 param apicServiceName = readEnvironmentVariable('APIC_SERVICE_NAME', '')
 param aiFoundryResourceName = readEnvironmentVariable('AI_FOUNDRY_RESOURCE_NAME', '')
+param keyVaultName = readEnvironmentVariable('KEY_VAULT_NAME', '')
 
 // ============================================================================
 // MONITORING - Log Analytics configuration
@@ -98,6 +100,7 @@ param languageServicePrivateEndpointName = readEnvironmentVariable('LANGUAGE_SER
 param aiContentSafetyPrivateEndpointName = readEnvironmentVariable('AI_CONTENT_SAFETY_PE_NAME', '')
 param apimV2PrivateEndpointName = readEnvironmentVariable('APIM_V2_PE_NAME', '')
 param aiFoundryPrivateEndpointName = readEnvironmentVariable('AI_FOUNDRY_PE_NAME', '')
+param keyVaultPrivateEndpointName = readEnvironmentVariable('KEY_VAULT_PE_NAME', '')
 
 // Services network access configuration
 param apimNetworkType = readEnvironmentVariable('APIM_NETWORK_TYPE', 'External')
@@ -108,6 +111,7 @@ param eventHubNetworkAccess = readEnvironmentVariable('EVENTHUB_NETWORK_ACCESS',
 param languageServiceExternalNetworkAccess = readEnvironmentVariable('LANGUAGE_SERVICE_EXTERNAL_NETWORK_ACCESS', 'Disabled')
 param aiContentSafetyExternalNetworkAccess = readEnvironmentVariable('AI_CONTENT_SAFETY_EXTERNAL_NETWORK_ACCESS', 'Disabled')
 param aiFoundryExternalNetworkAccess = readEnvironmentVariable('AI_FOUNDRY_EXTERNAL_NETWORK_ACCESS', 'Disabled')
+param keyVaultExternalNetworkAccess = readEnvironmentVariable('KEY_VAULT_EXTERNAL_NETWORK_ACCESS', 'Disabled')
 param useAzureMonitorPrivateLinkScope = bool(readEnvironmentVariable('USE_AZURE_MONITOR_PRIVATE_LINK_SCOPE', 'false'))
 
 // ============================================================================
@@ -134,6 +138,7 @@ param logicAppsSkuCapacityUnits = int(readEnvironmentVariable('LOGIC_APPS_SKU_CA
 param languageServiceSkuName = readEnvironmentVariable('LANGUAGE_SERVICE_SKU_NAME', 'S')
 param aiContentSafetySkuName = readEnvironmentVariable('AI_CONTENT_SAFETY_SKU_NAME', 'S0')
 param apicSku = readEnvironmentVariable('APIC_SKU', 'Free')
+param keyVaultSkuName = readEnvironmentVariable('KEY_VAULT_SKU_NAME', 'standard')
 
 // ============================================================================
 // ACCELERATOR SPECIFIC PARAMETERS

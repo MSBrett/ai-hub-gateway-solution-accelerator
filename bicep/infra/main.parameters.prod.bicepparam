@@ -7,7 +7,8 @@ using './main.bicep'
 
 // Basic Configuration
 param environmentName = 'citadel-prod'
-param location = 'eastus'
+param location = 'swedencentral'
+param apicLocation = 'swedencentral'
 param resourceGroupName = ''  // Auto-generated based on environmentName
 param tags = {
   'azd-env-name': 'citadel-prod'
@@ -51,6 +52,10 @@ param cosmosDbPublicAccess = 'Disabled'
 param eventHubNetworkAccess = 'Disabled'
 param languageServiceExternalNetworkAccess = 'Disabled'
 param aiContentSafetyExternalNetworkAccess = 'Disabled'
+param keyVaultExternalNetworkAccess = 'Disabled'
+
+// Key Vault SKU (premium recommended for production for HSM support)
+param keyVaultSkuName = 'premium'
 
 // Enable Azure Monitor Private Link Scope
 param useAzureMonitorPrivateLinkScope = true
