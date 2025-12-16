@@ -140,27 +140,25 @@ param useCase = {
 //
 // Example:
 // param apiNameMapping = {
-//   OAI: [
+//   LLM: [
 //     'azure-openai-api',
 //     'universal-llm-api'
 //   ]
 //   DOC: [
 //     'document-intelligence-api'
 //   ]
-//   CS: [
-//     'content-safety-api'
+//   SRCH: [
+//     'azure-ai-search-index-api'
 //   ]
 // }
 //
 // Note: API names are case-sensitive and must match exactly with APIM.
 // ============================================================================
 param apiNameMapping = {
-  OAI: [
-    'azure-openai-api' // Replace with your actual API ID(s) on APIM
-  ]
+  LLM: ['universal-llm-api', 'azure-openai-api']
   // Add more service codes and API mappings as needed
-  // DOC: ['document-intelligence-api']
-  // CS: ['content-safety-api']
+  // DOC: ['document-intelligence-api', 'document-intelligence-api-legacy']
+  // SRCH: ['azure-ai-search-index-api']
 }
 
 // ============================================================================
@@ -173,7 +171,7 @@ param apiNameMapping = {
 //
 // Each service object requires:
 // - code: Service identifier (must match a key in apiNameMapping)
-//   Examples: 'OAI', 'DOC', 'CS', 'CV'
+//   Examples: 'LLM', 'DOC', 'SRCH', 'CV'
 //
 // - endpointSecretName: Name for the endpoint URL secret in Key Vault
 //   Convention: <SERVICE>_ENDPOINT or <SERVICE>-ENDPOINT
@@ -182,7 +180,7 @@ param apiNameMapping = {
 //
 // - apiKeySecretName: Name for the API key secret in Key Vault
 //   Convention: <SERVICE>_API_KEY or <SERVICE>-API-KEY
-//   Examples: 'OPENAI_API_KEY', 'DOCINTELL_API_KEY'
+//   Examples: 'LLM_API_KEY', 'DOCINTELL_API_KEY'
 //   Note: Underscores will be replaced with hyphens in Key Vault
 //
 // Optional properties:
@@ -193,7 +191,7 @@ param apiNameMapping = {
 //
 // Example with inline policy:
 // {
-//   code: 'OAI'
+//   code: 'LLM'
 //   endpointSecretName: 'OPENAI_ENDPOINT'
 //   apiKeySecretName: 'OPENAI_API_KEY'
 //   policyXml: '<policies>...</policies>'
@@ -201,7 +199,7 @@ param apiNameMapping = {
 //
 // Example loading policy from file:
 // {
-//   code: 'OAI'
+//   code: 'LLM'
 //   endpointSecretName: 'OPENAI_ENDPOINT'
 //   apiKeySecretName: 'OPENAI_API_KEY'
 //   policyXml: loadTextContent('policies/openai-custom-policy.xml')
@@ -218,7 +216,7 @@ param apiNameMapping = {
 // Full example:
 // param services = [
 //   {
-//     code: 'OAI'
+//     code: 'LLM'
 //     endpointSecretName: 'OPENAI_ENDPOINT'
 //     apiKeySecretName: 'OPENAI_API_KEY'
 //     policyXml: loadTextContent('policies/openai-throttling.xml')
@@ -230,15 +228,15 @@ param apiNameMapping = {
 //     policyXml: '' // Uses default policy
 //   }
 //   {
-//     code: 'CS'
-//     endpointSecretName: 'CONTENTSAFETY_ENDPOINT'
-//     apiKeySecretName: 'CONTENTSAFETY_API_KEY'
+//     code: 'SRCH'
+//     endpointSecretName: 'AZURE_AI_SEARCH_INDEX_ENDPOINT'
+//     apiKeySecretName: 'AZURE_AI_SEARCH_INDEX_API_KEY'
 //   }
 // ]
 // ============================================================================
 param services = [
   {
-    code: 'OAI'                              // Service code (must exist in apiNameMapping)
+    code: 'LLM'                              // Service code (must exist in apiNameMapping)
     endpointSecretName: 'OPENAI_ENDPOINT'    // Key Vault secret name for endpoint URL
     apiKeySecretName: 'OPENAI_API_KEY'       // Key Vault secret name for API key
     policyXml: ''                            // Optional: Custom policy XML (empty = use default)
