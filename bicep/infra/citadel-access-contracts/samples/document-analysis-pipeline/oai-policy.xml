@@ -20,7 +20,7 @@
         <!-- Model restrictions: Optimized for document tasks -->
         <!-- Allowed: GPT-4o (complex), GPT-4o-mini (simple), GPT-4-turbo (batch) -->
         <choose>
-            <when condition="@(!new [] { "gpt-4o", "gpt-4o-mini", "gpt-4-turbo" }.Contains(context.Variables["requestedModel"] ?? ""))">
+            <when condition="@(!new [] { "gpt-4o", "gpt-4o-mini", "text-embedding-3-large" }.Contains(context.Variables["requestedModel"] ?? ""))">
                 <return-response>
                     <set-status code="403" reason="Forbidden" />
                     <set-header name="Content-Type" exists-action="override">
@@ -41,7 +41,7 @@
         <!-- Task-based rate limiting -->
         <choose>
             <!-- Batch processing: Lower per-minute limit but higher daily quota -->
-            <when condition="@(context.Variables.GetValueOrDefault&lt;string&gt;(&quot;taskType&quot;) == &quot;batch&quot;)">
+            <when condition="@(context.Variables.GetValueOrDefault<string>("taskType") == "batch")">
                 <rate-limit-by-key calls="100" renewal-period="60" counter-key="@(context.Subscription.Id + &quot;-batch&quot;)" />
                 <quota-by-key calls="100000" renewal-period="86400" counter-key="@(context.Subscription.Id + &quot;-batch-daily&quot;)" />
             </when>
