@@ -71,6 +71,8 @@ flowchart TB
 
 ### Runtime Request Flow
 
+Below is a suggested flow for client applications (i.e. agents) interacting with the onboarded services via the Citadel Access Contracts:
+
 ```mermaid
 sequenceDiagram
     participant App as Client Application
@@ -158,7 +160,7 @@ Map service codes to their API names in APIM:
 
 ```bicep
 {
-  OAI: ["azure-openai-service-api"]
+  LLM: ["azure-openai-api", "universal-llm-api"]
   DOC: ["document-intelligence-api", "document-intelligence-api-legacy"]
   SRCH: ["azure-ai-search-index-api"]
   // ... add more services

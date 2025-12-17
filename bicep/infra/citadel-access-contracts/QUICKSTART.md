@@ -32,7 +32,7 @@ using '../../main.bicep'
 param apim = { subscriptionId: '...', resourceGroupName: '...', name: '...' }
 param keyVault = { subscriptionId: '...', resourceGroupName: '...', name: '...' }
 param useCase = { businessUnit: '...', useCaseName: '...', environment: 'DEV' }
-param apiNameMapping = { OAI: ['azure-openai-service-api'] }
+param apiNameMapping = { LLM: ['azure-openai-service-api', 'universal-llm-api'] }
 param services = [{ code: 'OAI', endpointSecretName: 'OAI-ENDPOINT', apiKeySecretName: 'OAI-KEY', policyXml: '' }]
 ```
 
@@ -40,7 +40,7 @@ param services = [{ code: 'OAI', endpointSecretName: 'OAI-ENDPOINT', apiKeySecre
 ```bicep
 param services = [
   {
-    code: 'OAI'
+    code: 'LLM'
     endpointSecretName: 'OAI-ENDPOINT'
     apiKeySecretName: 'OAI-KEY'
     policyXml: loadTextContent('custom-policy.xml')
