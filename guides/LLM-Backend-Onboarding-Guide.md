@@ -33,8 +33,8 @@ Below is a sample overview of relevant configurations associated with LLM onboar
 │  └── pool-gpt-4o-mini (multiple backends)                           │
 ├─────────────────────────────────────────────────────────────────────┤
 │  Backends                                                           │
-│  ├── llm-foundry-east-us (Microsoft Foundry)                               │
-│  ├── llm-foundry-west-us (Microsoft Foundry)                               │
+│  ├── llm-foundry-east-us (Microsoft Foundry)                        │
+│  ├── llm-foundry-west-us (Microsoft Foundry)                        │
 │  └── llm-openai-sweden (Azure OpenAI)                               │
 └─────────────────────────────────────────────────────────────────────┘
 ```

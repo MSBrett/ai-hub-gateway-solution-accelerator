@@ -56,7 +56,7 @@ Use the below checklist to plan your deployment configuration:
 - [ ] APIM Network Configuration
   - [ ] External (public endpoint, suitable for dev/test)
   - [ ] Internal (private endpoint, recommended for production)
-  - [ ] APIM Customer Domains (for gateway, developer portal and management names)
+  - [ ] APIM Custom Domains (list them for gateway, developer portal and management names)
 - [ ] Log Analytics Strategy
   - [ ] New Workspace will be created
   - [ ] Use existing centralized Workspace (cross-environment)
@@ -75,25 +75,43 @@ Leverage deployment parameter files ([main.bicepparam](../bicep/infra/main.bicep
 
 ### Required Resource Providers
 
+You can use Azure Cloud Shell or your local Azure CLI installation to register the required resource providers.
+
+First we make sure that the target subscription is selected:
+
+```bash 
+az login
+az account list --output table
+az account set --subscription "<subscription-name or id>"
+az account show --output table
+```
+
+Then register all required resource providers:
+
 ```bash
 # Register all required providers
 az provider register --namespace Microsoft.ApiCenter
 az provider register --namespace Microsoft.ApiManagement
 az provider register --namespace Microsoft.App
 az provider register --namespace Microsoft.Automation
+az provider register --namespace Microsoft.Cache
 az provider register --namespace Microsoft.CognitiveServices
 az provider register --namespace Microsoft.Compute
 az provider register --namespace Microsoft.ContainerRegistry
 az provider register --namespace Microsoft.ContainerService
+az provider register --namespace Microsoft.Diagnostics
 az provider register --namespace Microsoft.DocumentDB
 az provider register --namespace Microsoft.EventHub
 az provider register --namespace Microsoft.Insights
 az provider register --namespace Microsoft.KeyVault
 az provider register --namespace Microsoft.MachineLearningServices
 az provider register --namespace Microsoft.ManagedIdentity
+az provider register --namespace Microsoft.Monitor
 az provider register --namespace Microsoft.Network
 az provider register --namespace Microsoft.OperationalInsights
 az provider register --namespace Microsoft.Resources
+az provider register --namespace Microsoft.Search
+az provider register --namespace Microsoft.Sql
 az provider register --namespace Microsoft.Storage
 az provider register --namespace Microsoft.Web
 
@@ -101,7 +119,7 @@ az provider register --namespace Microsoft.Web
 az provider list --query "[?registrationState=='Registered'].namespace" -o table
 ```
 
-### Development Tools
+### Deployment Tools
 
 **Option 1: Local Machine**
 - [Azure Developer CLI (azd)](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd)
@@ -116,7 +134,7 @@ az provider list --query "[?registrationState=='Registered'].namespace" -o table
 - Storage account for persistence must be attached
 - Built-in editor (in the classic mode)
 
-**Option 3: Azure DevOps / GitHub Actions**
+**Option 3:  DevOps (i.e. Azure DevOps / GitHub Actions)**
 - Self-hosted or Microsoft-hosted agents
 - Service Principal with appropriate permissions
 - Secure variable groups for secrets
@@ -128,15 +146,17 @@ az provider list --query "[?registrationState=='Registered'].namespace" -o table
 First you need to get the deployment template files:
 
 ```bash
+# Create a working directory:
+mkdir ai-hub-citadel-deployment
+# Make the repository your current directory:
+cd ai-hub-citadel-deployment # it may differ if you used git clone
 
+# Copy repo files
 azd init --template Azure-Samples/ai-hub-gateway-solution-accelerator -e ai-hub-citadel-dev --branch citadel-v1
 
 # or use git clone:
 # git clone https://github.com/Azure-Samples/ai-hub-gateway-solution-accelerator.git
 # git checkout citadel-v1
-
-# Make the repository your current directory:
-cd ai-hub-citadel-deployment # it may differ if you used git clone
 
 ```
 
@@ -182,50 +202,6 @@ param useExistingLogAnalytics = false
 // Features
 param enableAIFoundry = true
 param enableAPICenter = true
-```
-
-#### Choosing the Right Parameter File
-
-##### Using `az deployment sub create`:
-
-**For Development:**
-```bash
-az deployment sub create \
-  --location eastus \
-  --template-file ./bicep/infra/main.bicep \
-  --parameters ./bicep/infra/main.parameters.dev.bicepparam
-```
-
-**For Production:**
-```bash
-az deployment sub create \
-  --location eastus \
-  --template-file ./bicep/infra/main.bicep \
-  --parameters ./bicep/infra/main.parameters.prod.bicepparam
-```
-
-**For Custom Environments:**
-1. Copy `main.parameters.complete.bicepparam`
-2. Rename to `main.parameters.<env>.bicepparam`
-3. Customize values
-4. Version control the file
-
->Note: Using `az deployment sub create` will only provision the infrastructure. You still will need to deploy the `Logic App` workflows separately after the infrastructure is ready.
-
-##### Using `azd up`:
-
-This automatically picks up the `main.bicepparam` file. You can override specific parameters using environment variables or by modifying the `main.bicepparam` file directly.
-
-```bash
-# Authenticate to Azure
-# append --tenant-id <your-tenant-id> if needed
-azd auth login
-
-# Initialize environment
-azd env new ai-hub-citadel-dev-01
-
-# Provision and deploy everything based on defaults
-azd up
 ```
 
 ---
@@ -325,8 +301,7 @@ param vnetName = 'vnet-hub-eastus'
 param existingVnetRG = 'rg-network-hub'
 param apimSubnetName = 'snet-citadel-apim'
 param privateEndpointSubnetName = 'snet-citadel-private-endpoints'
-param dnsZoneRG = 'rg-network-hub'
-param dnsSubscriptionId = '<hub-subscription-id>'
+param functionAppSubnetName = 'snet-citadel-functions'
 ```
 
 **When to Use:**
@@ -435,7 +410,7 @@ param dnsSubscriptionId = '00000000-0000-0000-0000-000000000000'
 4. NSG required rules configured for APIM subnet
 
 **Required DNS Zones:**
-- `privatelink.openai.azure.com`
+- `privatelink.vaultcore.azure.com`
 - `privatelink.cognitiveservices.azure.com`
 - `privatelink.vaultcore.azure.net`
 - `privatelink.monitor.azure.com`
@@ -470,9 +445,9 @@ Detailed guide: [Bring Your Own Network](./network-approach.md)
 
 ### 4. AI Model Deployment (Optional)
 
-#### AI Foundry Configuration
+#### Microsoft Foundry Configuration
 
-AI Citadel can deploy **AI Foundry instances** with model deployments as part of the primary landing zone provisioning.
+AI Citadel can deploy **Microsoft Foundry instances** with model deployments as part of the primary landing zone provisioning.
 
 Input parameters are separated into two parts:
 
@@ -483,7 +458,7 @@ Input parameters are separated into two parts:
 param aiFoundryInstances = [
   {
     name: readEnvironmentVariable('AI_FOUNDRY_RESOURCE_NAME', '')
-    location: readEnvironmentVariable('AZURE_LOCATION', 'eastus')
+    location: readEnvironmentVariable('AZURE_LOCATION', 'swedencentral')
     customSubDomainName: ''
     defaultProjectName: 'citadel-governance-project'
   }
@@ -496,7 +471,7 @@ param aiFoundryInstances = [
 ]
 ```
 
-The above, creates two Foundry instances in `eastus` and `eastus2` regions as examples.
+The above, creates two Foundry instances in `swedencentral` and `eastus2` regions as examples.
 
 This allows you to deploy models in multiple regions for geo-redundancy, added capacity or accessing restricted regional models.
 
@@ -699,86 +674,51 @@ param aiContentSafetyExternalNetworkAccess = 'Disabled'
 
 It is recommended to leverage Azure Developer CLI (`azd`) for simplified deployments of both the infrastructure and application (Logic Apps workflows).
 
-### Method 1: Azure Cloud Shell
+Based on the configured parameter files, you can deploy using either `az deployment sub create` or `azd up`.
 
-**Best for:** Quick deployments, testing, no local setup
+### Using `az deployment sub create`:
 
-#### Using Azure Developer CLI (azd):
-
+**For Development:**
 ```bash
-
+az deployment sub create \
+  --location eastus \
+  --template-file ./bicep/infra/main.bicep \
+  --parameters ./bicep/infra/main.parameters.dev.bicepparam
 ```
 
-#### Using Azure CLI:
-
+**For Production:**
 ```bash
-# 1. Open Azure Cloud Shell
-# https://shell.azure.com
-
-# 2. Clone repository
-git clone https://github.com/Azure-Samples/ai-hub-gateway-solution-accelerator.git
-cd ai-hub-gateway-solution-accelerator
-
-# 3. Authenticate
-az login
-az account set --subscription "<subscription-name>"
-
-# 4. Deploy using parameter file
 az deployment sub create \
-  --name "citadel-$(date +%Y%m%d-%H%M%S)" \
   --location eastus \
   --template-file ./bicep/infra/main.bicep \
   --parameters ./bicep/infra/main.parameters.prod.bicepparam
-
-# 5. Monitor deployment
-az deployment sub show \
-  --name citadel-<timestamp> \
-  --query properties.provisioningState
 ```
 
->NOTE: Using `az deployment sub create` will only provision the infrastructure. You still will need to deploy the `Logic App` workflows separately after the infrastructure is ready.
+**For Custom Environments:**
+1. Copy `main.parameters.complete.bicepparam`
+2. Rename to `main.parameters.<env>.bicepparam`
+3. Customize values
+4. Version control the file
 
----
+>Note: Using `az deployment sub create` will only provision the infrastructure. You still will need to deploy the `Logic App` workflows separately after the infrastructure is ready.
 
-### Method 2: Local Machine (azd)
+### Using `azd up`:
 
-**Best for:** Development, iteration, local testing
+This automatically picks up the `main.bicepparam` file. You can override specific parameters using environment variables or by modifying the `main.bicepparam` file directly.
 
 ```bash
-# 1. Install prerequisites
-# - Azure Developer CLI
-# - Azure CLI
-
-# 2. Clone and navigate
-git clone https://github.com/Azure-Samples/ai-hub-gateway-solution-accelerator.git
-cd ai-hub-gateway-solution-accelerator
-
-# 3. Create environment
-azd env new citadel-prod
-
-# 4. Set environment variables
-azd env set AZURE_LOCATION eastus
-azd env set APIM_SKU PremiumV2
-azd env set ENABLE_AI_FOUNDRY true
-
-# 5. Login and deploy
+# Authenticate to Azure
+# append --tenant-id <your-tenant-id> if needed
 azd auth login
+
+# Initialize environment
+azd env new ai-hub-citadel-dev-01
+
+# Provision and deploy everything based on defaults
 azd up
-
-# 6. View outputs
-azd env get-values
 ```
 
-**Using Custom Parameter File:**
-
-```bash
-# Override with parameter file
-az deployment sub create \
-  --name citadel-prod \
-  --location eastus \
-  --template-file ./bicep/infra/main.bicep \
-  --parameters ./bicep/infra/main.parameters.prod.bicepparam
-```
+>NOTE: Using `azd up` will use the `main.bicepparam` file for parameter values. You can modify it or set environment variables to override specific parameters. This command provisions the infrastructure and deploys the Logic App workflows in one step.
 
 ---
 
