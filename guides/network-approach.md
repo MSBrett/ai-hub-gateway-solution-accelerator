@@ -7,6 +7,8 @@ AI Citadel Governance Hub supports **two architectural patterns** for network in
 
 Based on your decisions in the earlier checklist, choose one of the following approaches:
 
+![Network Architecture](../assets/citadel-governance-hub-architecture-v1.1.png)
+
 ### **Approach 1: Hub-Based (Citadel as Part of Hub)**
 
 In this approach, the Citadel Governance Hub is deployed within the existing hub virtual network (VNet) of your enterprise Azure Landing Zone.

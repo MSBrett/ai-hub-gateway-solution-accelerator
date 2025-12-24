@@ -381,6 +381,6 @@ llm-backend-onboarding/
 
 ## Related Guides
 
-- [Citadel Access Contracts](../../../guides/Citadel-Access-Contracts.md) - Configure use case access
-- [Full Deployment Guide](../....//guides/full-deployment-guide.md) - Complete Citadel deployment
-- [Dynamic LLM Backend Configuration](../../guides/archived/dynamic-llm-backend-configuration.md) - Detailed routing guide
+- [Citadel Access Contracts](../../../guides/citadel-access-contracts.md) - Configure use case access to governance hub
+- [Full Deployment Guide](../....//guides/full-deployment-guide.md) - Complete Citadel deployment guide
+- [Routing Guide](../../../guides/llm-routing-architecture.md) - Detailed routing architecture guide

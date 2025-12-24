@@ -772,7 +772,7 @@ Visit the [Deployment Troubleshooting Guide](./#) for common issues and resoluti
    - [Alert Configuration](./throttling-events-handling.md)
 
 - **Onboard Teams**
-   - [Citadel Access Contracts](./Citadel-Access-Contracts.md)
+  - [Citadel Access Contracts](./citadel-access-contracts.md)
 
 - **Deploy LLM Backends**
    - [Onboard Existing LLMs](./LLM-Backend-Onboarding-Guide.md)
