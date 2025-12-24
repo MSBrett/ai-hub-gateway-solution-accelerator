@@ -4,3 +4,42 @@ This guide provides recommendations for sizing the AI Citadel Governance Hub bas
 
 The approach is based on T-Shirt Sizing Methodology, which categorizes deployments into Small, Medium, and Large sizes based on expected workloads and user counts.
 
+>NOTE: Below estimates are based on typical usage patterns and may vary based on specific customer requirements and workloads. It is advisable to conduct a detailed assessment for precise sizing.
+
+## Governance Hub Environment Sizing
+
+As a centralized supplemental landing zone for AI workloads, the AI Citadel Governance Hub can be sized based on the number of environments required by the customer. Common configurations include:
+•	One central for production and non-production
+•	Two with one for production and one for non-production
+•	Other: based on customer requirements (like have 3 or more environments)
+
+## T-Shirt Sizing Categories
+
+### Small: development and experimental
+
+No SLA – development only. Can be multiple environments per customer. Full network isolation supported
+(Experimental, low load)
+https://azure.com/e/b23669e7f59948c488608ecab4b7c1fa
+
+### Medium Classic: non-production with SLA (or minimum production)
+Minimum-production or non-production with SLA. Can be multiple environments per customer. Full network isolation supported (uses APIM Premium)
+(Estimated to handle ~300-500 PTU)
+https://azure.com/e/7a539b8ef73a4b5e87b5e60c079f0835
+ 
+### Medium v2: non-production with SLA (or minimum production)
+Minimum-production or non-production with SLA. Can be multiple environments per customer. Full network isolation supported (uses APIM Standard V2)
+(Estimated to handle ~200 PTU per APIM unit)
+https://azure.com/e/b44716c27c054c4eb979248744bc341d
+ 
+### Large:
+Multi-zone production setup with SLA. Full network isolation supported
+(Estimated to handle ~1,000-1,500 PTU)
+https://azure.com/e/fed48a9999804396a7e60d31550f24bf
+
+## Considerations for sizing
+
+When determining the appropriate size for the AI Citadel Governance Hub, consider the following factors:
+
+- Above calculation excludes the sizing for the agentic applications (which would be sized separately based on their own requirements) 
+- LLM and other AI services which should be sized based on the expected usage patterns and workloads.
+- Medium and Medium V2 tiers can be scaled out by adding additional APIM units to handle increased load as per customer requirements.
