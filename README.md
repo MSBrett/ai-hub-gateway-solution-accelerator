@@ -242,7 +242,8 @@ Master AI Citadel Governance Hub implementation and operations with our detailed
 
 | Guide | Description |
 |-------|-------------|
-| [**Governance Hub Benefits**](./guides/governance-hub-benefits.md) | Detailed benefits and stakeholder value of adopting Citadel Governance Hub |
+| [**🆕 Governance Hub Benefits**](./guides/governance-hub-benefits.md) | Detailed benefits and stakeholder value of adopting Citadel Governance Hub |
+| [**🆕 Citadel Sizing Guide**](./guides/citadel-sizing-guide.md) | Guidance on sizing the Citadel Governance Hub based on workloads and environments |
 
 ### 🏗️ **Landing zone deployment**
 
@@ -276,7 +277,7 @@ Master AI Citadel Governance Hub implementation and operations with our detailed
 
 | Guide | Description |
 |-------|-------------|
-| [Power BI Dashboard](./guides/power-bi-dashboard.md) | Usage analytics and cost allocation dashboards |
+| [**🆕 Power BI Dashboard**](./guides/power-bi-dashboard.md) | Usage analytics and cost allocation dashboards |
 
 ### 🏗️ **Architecture & configurations**
 

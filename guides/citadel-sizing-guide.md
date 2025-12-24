@@ -43,3 +43,23 @@ When determining the appropriate size for the AI Citadel Governance Hub, conside
 - Above calculation excludes the sizing for the agentic applications (which would be sized separately based on their own requirements) 
 - LLM and other AI services which should be sized based on the expected usage patterns and workloads.
 - Medium and Medium V2 tiers can be scaled out by adding additional APIM units to handle increased load as per customer requirements.
+
+## SKUs implementation
+
+Based on the selected T-Shirt and environment, updating the SKUs in the deployment [main.bicepparam](../bicep/infra/main.bicepparam) under the `COMPUTE SKU & SIZE` section:
+
+```bicep
+// ============================================================================
+// COMPUTE SKU & SIZE - SKUs and capacity settings for services
+// ============================================================================
+param apimSku = readEnvironmentVariable('APIM_SKU', 'StandardV2')
+param apimSkuUnits = int(readEnvironmentVariable('APIM_SKU_UNITS', '1'))
+param eventHubCapacityUnits = int(readEnvironmentVariable('EVENTHUB_CAPACITY', '1'))
+param cosmosDbRUs = int(readEnvironmentVariable('COSMOS_DB_RUS', '400'))
+param logicAppsSkuCapacityUnits = int(readEnvironmentVariable('LOGIC_APPS_SKU_CAPACITY_UNITS', '1'))
+param languageServiceSkuName = readEnvironmentVariable('LANGUAGE_SERVICE_SKU_NAME', 'S')
+param aiContentSafetySkuName = readEnvironmentVariable('AI_CONTENT_SAFETY_SKU_NAME', 'S0')
+param apicSku = readEnvironmentVariable('APIC_SKU', 'Free')
+param keyVaultSkuName = readEnvironmentVariable('KEY_VAULT_SKU_NAME', 'standard')
+```
+>NOTE: Above is the default parameters configurations. It needs to be adjusted based on the selections made based on final sizing.
