@@ -95,6 +95,9 @@ param aiFoundryResourceName string = ''
 @description('Name of the Azure Key Vault. Leave blank to use default naming conventions.')
 param keyVaultName string = ''
 
+@description('Name of the Azure Managed Redis resource. Leave blank to use default naming conventions.')
+param redisCacheName string = ''
+
 //
 // NETWORKING PARAMETERS - Network configuration and access controls
 //
@@ -167,6 +170,7 @@ param existingPrivateDnsZones object = {
   // cognitiveServices: '/subscriptions/{sub-id}/resourceGroups/{rg}/providers/Microsoft.Network/privateDnsZones/privatelink.cognitiveservices.azure.com'
   // apimGateway: '/subscriptions/{sub-id}/resourceGroups/{rg}/providers/Microsoft.Network/privateDnsZones/privatelink.azure-api.net'
   // aiServices: '/subscriptions/{sub-id}/resourceGroups/{rg}/providers/Microsoft.Network/privateDnsZones/privatelink.services.ai.azure.com'
+  // redis: '/subscriptions/{sub-id}/resourceGroups/{rg}/providers/Microsoft.Network/privateDnsZones/privatelink.redis.azure.net'
 }
 
 // PRIVATE ENDPOINTS - Names for private endpoints for various services
@@ -202,6 +206,9 @@ param aiFoundryPrivateEndpointName string = ''
 
 @description('Key Vault private endpoint name. Leave blank to use default naming conventions.')
 param keyVaultPrivateEndpointName string = ''
+
+@description('Azure Managed Redis private endpoint name. Leave blank to use default naming conventions.')
+param redisPrivateEndpointName string = ''
 
 // Services network access configuration
 
@@ -239,6 +246,10 @@ param aiFoundryExternalNetworkAccess string = 'Disabled'
 @allowed([ 'Enabled', 'Disabled' ])
 param keyVaultExternalNetworkAccess string = 'Disabled'
 
+@description('Azure Managed Redis public network access. When Disabled, private endpoint is the exclusive access method.')
+@allowed([ 'Enabled', 'Disabled' ])
+param redisPublicNetworkAccess string = 'Disabled'
+
 @description('Use Azure Monitor Private Link Scope for Log Analytics and Application Insights.')
 param useAzureMonitorPrivateLinkScope bool = false
 
@@ -272,6 +283,9 @@ param entraAuth bool = false
 @description('Enable API Center for API governance and discovery.')
 param enableAPICenter bool = true
 
+@description('Enable Azure Managed Redis (AMR). When true (default), the Redis resource and APIM cache integration are provisioned.')
+param enableManagedRedis bool = true
+
 //
 // COMPUTE SKU & SIZE - SKUs and capacity settings for services
 //
@@ -304,6 +318,72 @@ param apicSku string = 'Free'
 @description('SKU for the Key Vault service.')
 @allowed(['standard', 'premium'])
 param keyVaultSkuName string = 'standard'
+
+@description('Redis Enterprise / Azure Managed Redis SKU name. Allowed values align to Microsoft.Cache/redisEnterprise@2025-07-01.')
+@allowed([
+  'Enterprise_E1'
+  'Enterprise_E5'
+  'Enterprise_E10'
+  'Enterprise_E20'
+  'Enterprise_E50'
+  'Enterprise_E100'
+  'Enterprise_E200'
+  'Enterprise_E400'
+  'EnterpriseFlash_F300'
+  'EnterpriseFlash_F700'
+  'EnterpriseFlash_F1500'
+  'Balanced_B0'
+  'Balanced_B1'
+  'Balanced_B3'
+  'Balanced_B5'
+  'Balanced_B10'
+  'Balanced_B20'
+  'Balanced_B50'
+  'Balanced_B100'
+  'Balanced_B150'
+  'Balanced_B250'
+  'Balanced_B350'
+  'Balanced_B500'
+  'Balanced_B700'
+  'Balanced_B1000'
+  'MemoryOptimized_M10'
+  'MemoryOptimized_M20'
+  'MemoryOptimized_M50'
+  'MemoryOptimized_M100'
+  'MemoryOptimized_M150'
+  'MemoryOptimized_M250'
+  'MemoryOptimized_M350'
+  'MemoryOptimized_M500'
+  'MemoryOptimized_M700'
+  'MemoryOptimized_M1000'
+  'MemoryOptimized_M1500'
+  'MemoryOptimized_M2000'
+  'ComputeOptimized_X3'
+  'ComputeOptimized_X5'
+  'ComputeOptimized_X10'
+  'ComputeOptimized_X20'
+  'ComputeOptimized_X50'
+  'ComputeOptimized_X100'
+  'ComputeOptimized_X150'
+  'ComputeOptimized_X250'
+  'ComputeOptimized_X350'
+  'ComputeOptimized_X500'
+  'ComputeOptimized_X700'
+  'FlashOptimized_A250'
+  'FlashOptimized_A500'
+  'FlashOptimized_A700'
+  'FlashOptimized_A1000'
+  'FlashOptimized_A1500'
+  'FlashOptimized_A2000'
+  'FlashOptimized_A4500'
+])
+param redisSkuName string = 'Balanced_B10'
+
+@description('Redis Enterprise cluster capacity. Only used for Enterprise_* and EnterpriseFlash_* SKUs. Valid values are (2, 4, 6, ...) for Enterprise SKUs and (3, 9, 15, ...) for EnterpriseFlash SKUs.')
+param redisSkuCapacity int = 2
+
+@description('Minimum TLS version for Redis connections.')
+param redisMinimumTlsVersion string = '1.2'
 
 //
 // ACCELERATOR SPECIFIC PARAMETERS - Additional parameters for the solution (should not be modified without careful consideration)
@@ -428,6 +508,9 @@ param aiFoundryModelsConfig array = [
   }
 ]
 
+@description('Name of the text embedding model deployment in the primary Microsoft Foundry to be used for APIM semantic caching.')
+param primaryFoundryEmbeddingModelName string = 'text-embedding-3-large'
+
 @description('Microsoft Entra ID tenant ID for authentication (only used when entraAuth is true).')
 param entraTenantId string = ''
 
@@ -535,6 +618,9 @@ var llmBackendConfig = [for (instance, i) in aiFoundryInstances: {
   weight: 100
 }]
 
+var primaryFoundryName = !empty(aiFoundryInstances[0].name) ? aiFoundryInstances[0].name : 'aif-${resourceToken}-0'
+var primaryFoundryEmbeddingsBackendUrl = 'https://${primaryFoundryName}.services.ai.azure.com/openai/deployments/${primaryFoundryEmbeddingModelName}/embeddings'
+
 var openAiPrivateDnsZoneName = 'privatelink.openai.azure.com'
 var keyVaultPrivateDnsZoneName = 'privatelink.vaultcore.azure.net'
 var monitorPrivateDnsZoneName = 'privatelink.monitor.azure.com'
@@ -547,6 +633,7 @@ var storageQueuePrivateDnsZoneName = 'privatelink.queue.core.windows.net'
 var aiCogntiveServicesDnsZoneName = 'privatelink.cognitiveservices.azure.com'
 var apimV2SkuDnsZoneName = 'privatelink.azure-api.net'
 var aiServicesDnsZoneName = 'privatelink.services.ai.azure.com'
+var redisPrivateDnsZoneName = 'privatelink.redis.azure.net'
 
 // Extract existing DNS zone resource IDs from the parameter (for BYO network scenarios)
 // These are used when useExistingVnet is true and existingPrivateDnsZones is provided
@@ -561,6 +648,7 @@ var existingStorageQueueDnsZoneId = existingPrivateDnsZones.?storageQueue ?? ''
 var existingCognitiveServicesDnsZoneId = existingPrivateDnsZones.?cognitiveServices ?? ''
 var existingApimGatewayDnsZoneId = existingPrivateDnsZones.?apimGateway ?? ''
 var existingAiServicesDnsZoneId = existingPrivateDnsZones.?aiServices ?? ''
+var existingRedisDnsZoneId = existingPrivateDnsZones.?redis ?? ''
 
 // Determine if we're using explicit DNS zone resource IDs (new approach) vs legacy RG/Subscription lookup
 #disable-next-line no-unused-vars
@@ -579,6 +667,7 @@ var baseDnsZoneNames = [
   storageQueuePrivateDnsZoneName
   apimV2SkuDnsZoneName
   aiServicesDnsZoneName
+  redisPrivateDnsZoneName
 ]
 
 // Only include Azure Monitor DNS zone when Private Link Scope is enabled
@@ -813,6 +902,29 @@ module eventHub './modules/event-hub/event-hub.bicep' = {
   }
 }
 
+module managedRedis './modules/redis/redis.bicep' = if (enableManagedRedis) {
+  name: 'managed-redis'
+  scope: resourceGroup
+  params: {
+    name: !empty(redisCacheName) ? redisCacheName : '${abbrs.cacheRedis}${resourceToken}'
+    location: location
+    tags: tags
+    skuName: redisSkuName
+    skuCapacity: redisSkuCapacity
+    publicNetworkAccess: redisPublicNetworkAccess
+    minimumTlsVersion: redisMinimumTlsVersion
+    usePrivateEndpoint: true
+    redisPrivateEndpointName: !empty(redisPrivateEndpointName) ? redisPrivateEndpointName : '${abbrs.cacheRedis}pe-${resourceToken}'
+    vNetName: useExistingVnet ? vnetExisting.outputs.vnetName : vnet.outputs.vnetName
+    privateEndpointSubnetName: useExistingVnet ? vnetExisting.outputs.privateEndpointSubnetName : vnet.outputs.privateEndpointSubnetName
+    vNetRG: useExistingVnet ? vnetExisting.outputs.vnetRG : vnet.outputs.vnetRG
+    redisDnsZoneName: redisPrivateDnsZoneName
+    dnsZoneRG: !useExistingVnet ? resourceGroup.name : dnsZoneRG
+    dnsSubscriptionId: !empty(dnsSubscriptionId) ? dnsSubscriptionId : subscription().subscriptionId
+    dnsZoneResourceId: existingRedisDnsZoneId
+  }
+}
+
 module apim './modules/apim/apim.bicep' = {
   name: 'apim'
   scope: resourceGroup
@@ -841,6 +953,11 @@ module apim './modules/apim/apim.bicep' = {
     enableAzureAISearch: enableAzureAISearch
     aiSearchInstances: aiSearchInstances
     llmBackendConfig: llmBackendConfig
+    enableRedisCache: enableManagedRedis
+    redisCacheConnectionString: enableManagedRedis ? managedRedis.outputs.redisCacheConnectionString : ''
+    redisCacheResourceId: enableManagedRedis ? managedRedis.outputs.redisResourceId : ''
+    enableEmbeddingsBackend: enableManagedRedis && enableAIFoundry
+    embeddingsBackendUrl: enableManagedRedis && enableAIFoundry ? primaryFoundryEmbeddingsBackendUrl : ''
     sku: apimSku
     skuCount: apimSkuUnits
     usePrivateEndpoint: apimV2UsePrivateEndpoint

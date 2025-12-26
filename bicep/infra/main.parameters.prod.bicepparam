@@ -34,6 +34,11 @@ param enableAPICenter = true
 param enableAIFoundry = true
 param enableAIGatewayPiiRedaction = true
 param enableAIModelInference = true
+// Azure Managed Redis (AMR)
+param enableManagedRedis = true
+param redisPublicNetworkAccess = 'Disabled'
+param redisSkuName = 'Balanced_B10'
+param redisSkuCapacity = 2
 param enableDocumentIntelligence = true
 param enableAzureAISearch = true
 param enableOpenAIRealtime = true

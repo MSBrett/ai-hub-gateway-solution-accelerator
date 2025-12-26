@@ -34,6 +34,7 @@ param aiContentSafetyName = readEnvironmentVariable('AI_CONTENT_SAFETY_NAME', ''
 param apicServiceName = readEnvironmentVariable('APIC_SERVICE_NAME', '')
 param aiFoundryResourceName = readEnvironmentVariable('AI_FOUNDRY_RESOURCE_NAME', '')
 param keyVaultName = readEnvironmentVariable('KEY_VAULT_NAME', '')
+param redisCacheName = readEnvironmentVariable('REDIS_CACHE_NAME', '')
 
 // ============================================================================
 // MONITORING - Log Analytics configuration
@@ -87,6 +88,7 @@ param existingPrivateDnsZones = {
   cognitiveServices: readEnvironmentVariable('EXISTING_DNS_ZONE_COGNITIVE', '') // privatelink.cognitiveservices.azure.com
   apimGateway: readEnvironmentVariable('EXISTING_DNS_ZONE_APIM', '')           // privatelink.azure-api.net
   aiServices: readEnvironmentVariable('EXISTING_DNS_ZONE_AI_SERVICES', '')     // privatelink.services.azure.com
+  redis: readEnvironmentVariable('EXISTING_DNS_ZONE_REDIS', '')                // privatelink.redis.azure.net
 }
 
 // Private Endpoint names
@@ -101,6 +103,7 @@ param aiContentSafetyPrivateEndpointName = readEnvironmentVariable('AI_CONTENT_S
 param apimV2PrivateEndpointName = readEnvironmentVariable('APIM_V2_PE_NAME', '')
 param aiFoundryPrivateEndpointName = readEnvironmentVariable('AI_FOUNDRY_PE_NAME', '')
 param keyVaultPrivateEndpointName = readEnvironmentVariable('KEY_VAULT_PE_NAME', '')
+param redisPrivateEndpointName = readEnvironmentVariable('REDIS_PE_NAME', '')
 
 // Services network access configuration
 param apimNetworkType = readEnvironmentVariable('APIM_NETWORK_TYPE', 'External')
@@ -113,6 +116,7 @@ param aiContentSafetyExternalNetworkAccess = readEnvironmentVariable('AI_CONTENT
 param aiFoundryExternalNetworkAccess = readEnvironmentVariable('AI_FOUNDRY_EXTERNAL_NETWORK_ACCESS', 'Disabled')
 param keyVaultExternalNetworkAccess = readEnvironmentVariable('KEY_VAULT_EXTERNAL_NETWORK_ACCESS', 'Disabled')
 param useAzureMonitorPrivateLinkScope = bool(readEnvironmentVariable('USE_AZURE_MONITOR_PRIVATE_LINK_SCOPE', 'false'))
+param redisPublicNetworkAccess = readEnvironmentVariable('REDIS_PUBLIC_NETWORK_ACCESS', 'Disabled')
 
 // ============================================================================
 // FEATURE FLAGS - Deploy specific capabilities
@@ -126,6 +130,7 @@ param enableOpenAIRealtime = bool(readEnvironmentVariable('ENABLE_OPENAI_REALTIM
 param enableAIFoundry = bool(readEnvironmentVariable('ENABLE_AI_FOUNDRY', 'true'))
 param entraAuth = bool(readEnvironmentVariable('AZURE_ENTRA_AUTH', 'false'))
 param enableAPICenter = bool(readEnvironmentVariable('ENABLE_API_CENTER', 'true'))
+param enableManagedRedis = bool(readEnvironmentVariable('ENABLE_MANAGED_REDIS', 'true'))
 
 // ============================================================================
 // COMPUTE SKU & SIZE - SKUs and capacity settings for services
@@ -139,6 +144,8 @@ param languageServiceSkuName = readEnvironmentVariable('LANGUAGE_SERVICE_SKU_NAM
 param aiContentSafetySkuName = readEnvironmentVariable('AI_CONTENT_SAFETY_SKU_NAME', 'S0')
 param apicSku = readEnvironmentVariable('APIC_SKU', 'Free')
 param keyVaultSkuName = readEnvironmentVariable('KEY_VAULT_SKU_NAME', 'standard')
+param redisSkuName = readEnvironmentVariable('REDIS_SKU_NAME', 'Balanced_B1')
+param redisSkuCapacity = int(readEnvironmentVariable('REDIS_SKU_CAPACITY', '2'))
 
 // ============================================================================
 // ACCELERATOR SPECIFIC PARAMETERS
@@ -232,6 +239,8 @@ param aiFoundryModelsConfig = [
     aiserviceIndex: 1
   }
 ]
+
+param primaryFoundryEmbeddingModelName = readEnvironmentVariable('PRIMARY_FOUNDRY_EMBEDDING_MODEL_NAME', 'text-embedding-3-large')
 
 // ============================================================================
 // ENTRA ID AUTHENTICATION
