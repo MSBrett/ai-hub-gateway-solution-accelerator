@@ -90,17 +90,12 @@
     <on-error>
         <base />
         <!--
-            Error Handling and Custom Metrics
-            Purpose: Pushes custom metrics for 429 throttling errors to enable Azure Monitor alerts
+            Error Handling
+            Purpose: Pushes custom metrics for errors to enable Azure Monitor alerts
             
-            Variables Set:
-            - service-name: Identifies the service generating the error
-            - target-deployment: The model that was requested when error occurred
-            
-            Integration: Uses throttling-events fragment to send metrics to monitoring system
+            Integration: Uses raise-throttling-events fragment to send metrics to monitoring system for 429 responses
         -->
-        <set-variable name="service-name" value="Universal LLM API" />
-        <set-variable name="target-deployment" value="@((string)context.Variables["requestedModel"])" />
-        <include-fragment fragment-id="throttling-events" />
+        
+        <include-fragment fragment-id="raise-throttling-events" />
     </on-error>
 </policies>
