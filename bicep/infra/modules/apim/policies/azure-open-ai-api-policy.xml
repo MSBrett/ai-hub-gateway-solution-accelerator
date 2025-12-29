@@ -41,7 +41,12 @@
         }</set-body>
 
         <!-- Step 3.2: Rewrite URL to remove /deployments/{deployment-id} path -->
-        <rewrite-uri template="/chat/completions" copy-unmatched-params="true" />
+        <rewrite-uri template="@{
+            var path = context.Request.Url.Path;
+            // Remove deployments/{deployment-id} segment (with or without leading slash), keeping only the endpoint path
+            var match = System.Text.RegularExpressions.Regex.Match(path, @"/?deployments/[^/]+(.*)");
+            return match.Success ? match.Groups[1].Value : path;
+        }" copy-unmatched-params="true" />
         
         <!-- Override api-version query parameter if clients are getting 404 due to mismatched api-version -->
         <!-- <set-query-parameter name="api-version" exists-action="override">
