@@ -231,7 +231,3 @@ sequenceDiagram
 
 ---
 
-## 📚 See also
-- `guides/apim-configuration.md` for APIM setup
-- `guides/openai-onboarding.md` and `guides/doc-intell-onboarding.md` for backend service considerations
-- `guides/power-bi-dashboard.md` for usage analytics
