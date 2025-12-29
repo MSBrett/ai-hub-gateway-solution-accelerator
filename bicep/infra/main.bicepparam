@@ -240,6 +240,7 @@ param aiFoundryModelsConfig = [
   }
 ]
 
+// Semantic caching APIM integration configurations
 param primaryFoundryEmbeddingModelName = readEnvironmentVariable('PRIMARY_FOUNDRY_EMBEDDING_MODEL_NAME', 'text-embedding-3-large')
 
 // ============================================================================
