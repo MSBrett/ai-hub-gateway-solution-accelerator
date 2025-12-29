@@ -619,7 +619,7 @@ var llmBackendConfig = [for (instance, i) in aiFoundryInstances: {
 }]
 
 var primaryFoundryName = !empty(aiFoundryInstances[0].name) ? aiFoundryInstances[0].name : 'aif-${resourceToken}-0'
-var primaryFoundryEmbeddingsBackendUrl = 'https://${primaryFoundryName}.services.ai.azure.com/openai/deployments/${primaryFoundryEmbeddingModelName}/embeddings'
+var primaryFoundryEmbeddingsBackendUrl = 'https://${primaryFoundryName}.cognitiveservices.azure.com/openai/deployments/${primaryFoundryEmbeddingModelName}/embeddings'
 
 var openAiPrivateDnsZoneName = 'privatelink.openai.azure.com'
 var keyVaultPrivateDnsZoneName = 'privatelink.vaultcore.azure.net'
