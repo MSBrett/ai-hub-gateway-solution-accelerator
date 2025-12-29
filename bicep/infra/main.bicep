@@ -611,7 +611,7 @@ var modelsGroupedByInstance = [for (instance, i) in aiFoundryInstances: {
 var llmBackendConfig = [for (instance, i) in aiFoundryInstances: {
   backendId: !empty(instance.name) ? '${instance.name}-${i}' : 'aif-${resourceToken}-${i}'
   backendType: 'ai-foundry'
-  endpoint: 'https://${!empty(instance.name) ? instance.name : 'aif-${resourceToken}-${i}'}.services.ai.azure.com/models'
+  endpoint: 'https://${!empty(instance.name) ? instance.name : 'aif-${resourceToken}-${i}'}.services.ai.azure.com/'
   authScheme: 'managedIdentity'
   supportedModels: modelsGroupedByInstance[i].models
   priority: 1
@@ -635,6 +635,13 @@ var apimV2SkuDnsZoneName = 'privatelink.azure-api.net'
 var aiServicesDnsZoneName = 'privatelink.services.ai.azure.com'
 var redisPrivateDnsZoneName = 'privatelink.redis.azure.net'
 
+// AI Foundry requires 3 DNS zones for full private endpoint support
+var aiFoundryDnsZoneNames = [
+  aiCogntiveServicesDnsZoneName     // privatelink.cognitiveservices.azure.com
+  openAiPrivateDnsZoneName          // privatelink.openai.azure.com
+  aiServicesDnsZoneName             // privatelink.services.ai.azure.com
+]
+
 // Extract existing DNS zone resource IDs from the parameter (for BYO network scenarios)
 // These are used when useExistingVnet is true and existingPrivateDnsZones is provided
 var existingKeyVaultDnsZoneId = existingPrivateDnsZones.?keyVault ?? ''
@@ -648,7 +655,15 @@ var existingStorageQueueDnsZoneId = existingPrivateDnsZones.?storageQueue ?? ''
 var existingCognitiveServicesDnsZoneId = existingPrivateDnsZones.?cognitiveServices ?? ''
 var existingApimGatewayDnsZoneId = existingPrivateDnsZones.?apimGateway ?? ''
 var existingAiServicesDnsZoneId = existingPrivateDnsZones.?aiServices ?? ''
+var existingOpenAiDnsZoneId = existingPrivateDnsZones.?openai ?? ''
 var existingRedisDnsZoneId = existingPrivateDnsZones.?redis ?? ''
+
+// Existing DNS zone resource IDs for AI Foundry (for BYO network scenarios)
+var aiFoundryDnsZoneResourceIds = union(
+  !empty(existingCognitiveServicesDnsZoneId) ? [existingCognitiveServicesDnsZoneId] : [],
+  !empty(existingOpenAiDnsZoneId) ? [existingOpenAiDnsZoneId] : [],
+  !empty(existingAiServicesDnsZoneId) ? [existingAiServicesDnsZoneId] : []
+)
 
 // Determine if we're using explicit DNS zone resource IDs (new approach) vs legacy RG/Subscription lookup
 #disable-next-line no-unused-vars
@@ -872,10 +887,10 @@ module foundry 'modules/foundry/foundry.bicep' = if(enableAIFoundry) {
     vNetRG: useExistingVnet ? vnetExisting.outputs.vnetRG : vnet.outputs.vnetRG
     privateEndpointSubnetName: useExistingVnet ? vnetExisting.outputs.privateEndpointSubnetName : vnet.outputs.privateEndpointSubnetName
     aiFoundryPrivateEndpointBaseName: !empty(aiFoundryPrivateEndpointName) ? aiFoundryPrivateEndpointName : '${abbrs.cognitiveServicesAccounts}foundry-pe-${resourceToken}'
-    aiServicesDnsZoneName: aiServicesDnsZoneName
+    aiServicesDnsZoneNames: aiFoundryDnsZoneNames
     dnsZoneRG: !useExistingVnet ? resourceGroup.name : dnsZoneRG
     dnsSubscriptionId: !empty(dnsSubscriptionId) ? dnsSubscriptionId : subscription().subscriptionId
-    dnsZoneResourceId: existingAiServicesDnsZoneId
+    dnsZoneResourceIds: aiFoundryDnsZoneResourceIds
     // Key Vault connection parameters
     keyVaultId: keyVault.outputs.keyVaultId
     keyVaultUri: keyVault.outputs.keyVaultUri
