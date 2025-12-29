@@ -248,7 +248,7 @@ The notebook validates:
 
 - [LLM Routing Architecture](llm-routing-architecture.md)
 - [Full Deployment Guide](full-deployment-guide.md)
-- [Citadel Access Contracts](Citadel-Access-Contracts.md)
+- [Citadel Access Contracts](citadel-access-contracts.md)
 
 ## File Structure
 

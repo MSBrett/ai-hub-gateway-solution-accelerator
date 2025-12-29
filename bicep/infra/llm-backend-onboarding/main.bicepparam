@@ -83,7 +83,7 @@ param llmBackendConfig = [
   {
     backendId: 'aif-citadel-primary'
     backendType: 'ai-foundry'
-    endpoint: 'https://aif-RESOURCE_TOKEN-0.services.ai.azure.com/models' // Replace with your AI Foundry endpoint
+    endpoint: 'https://aif-RESOURCE_TOKEN-0.cognitiveservices.azure.com/' // Replace with your AI Foundry endpoint
     authScheme: 'managedIdentity'
     // Each model has its own metadata for get-available-models response
     supportedModels: [
@@ -105,7 +105,7 @@ param llmBackendConfig = [
   {
     backendId: 'aif-citadel-secondary'
     backendType: 'ai-foundry'
-    endpoint: 'https://aif-RESOURCE_TOKEN-1.services.ai.azure.com/models' // Replace with your secondary AI Foundry endpoint
+    endpoint: 'https://aif-RESOURCE_TOKEN-1.cognitiveservices.azure.com/' // Replace with your secondary AI Foundry endpoint
     authScheme: 'managedIdentity'
     supportedModels: [
       { name: 'gpt-5', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2025-08-07' }
@@ -123,7 +123,7 @@ param llmBackendConfig = [
   // {
   //   backendId: 'aoai-eastus-gpt4'
   //   backendType: 'azure-openai'
-  //   endpoint: 'https://YOUR-AOAI-RESOURCE.openai.azure.com/openai'
+  //   endpoint: 'https://YOUR-AOAI-RESOURCE.openai.azure.com/'
   //   authScheme: 'managedIdentity'
   //   supportedModels: [
   //     { name: 'gpt-4', sku: 'Standard', capacity: 120, modelFormat: 'OpenAI', modelVersion: '0613' }

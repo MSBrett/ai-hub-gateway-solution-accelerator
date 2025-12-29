@@ -82,17 +82,21 @@ param vNetRG string
 @description('Base name for AI Foundry private endpoints. Leave blank to use default naming.')
 param aiFoundryPrivateEndpointBaseName string = ''
 
-@description('DNS zone name for AI Services private endpoint')
-param aiServicesDnsZoneName string = 'privatelink.services.ai.azure.com'
+@description('DNS zone names for AI Foundry private endpoints (supports all required zones)')
+param aiServicesDnsZoneNames array = [
+  'privatelink.cognitiveservices.azure.com'
+  'privatelink.openai.azure.com'
+  'privatelink.services.ai.azure.com'
+]
 
 @description('Resource group containing the DNS zones (legacy - used when dnsZoneResourceId is not provided)')
 param dnsZoneRG string = ''
 
-@description('Subscription ID containing the DNS zones (legacy - used when dnsZoneResourceId is not provided)')
+@description('Subscription ID containing the DNS zones (legacy - used when dnsZoneResourceIds is not provided)')
 param dnsSubscriptionId string = ''
 
-@description('Direct DNS zone resource ID for AI Services (preferred over dnsZoneRG/dnsSubscriptionId)')
-param dnsZoneResourceId string = ''
+@description('Array of direct DNS zone resource IDs (preferred over dnsZoneRG/dnsSubscriptionId). Order should match aiServicesDnsZoneNames.')
+param dnsZoneResourceIds array = []
 
 // ------------------
 //    KEY VAULT PARAMETERS
@@ -255,8 +259,8 @@ module modelDeployments 'deployments.bicep' = [for (config, i) in aiServicesConf
   }
 }]
 
-// Private endpoints for AI Foundry instances
-module privateEndpoints '../networking/private-endpoint.bicep' = [for (config, i) in aiServicesConfig: {
+// Private endpoints for AI Foundry instances (with all 3 required DNS zones)
+module privateEndpoints '../networking/private-endpoint-multi-dns.bicep' = [for (config, i) in aiServicesConfig: {
   name: 'pe-${foundryResources[i].name}'
   params: {
     name: !empty(aiFoundryPrivateEndpointBaseName) ? '${aiFoundryPrivateEndpointBaseName}-${i}' : '${foundryResources[i].name}-pe'
@@ -264,12 +268,12 @@ module privateEndpoints '../networking/private-endpoint.bicep' = [for (config, i
     groupIds: [
       'account'
     ]
-    dnsZoneName: aiServicesDnsZoneName
+    dnsZoneNames: aiServicesDnsZoneNames
     location: vNetLocation
     privateEndpointSubnetId: subnet.id
     dnsZoneRG: dnsZoneRG
     dnsSubId: dnsSubscriptionId
-    dnsZoneResourceId: dnsZoneResourceId
+    dnsZoneResourceIds: dnsZoneResourceIds
     tags: tags
   }
   dependsOn: [

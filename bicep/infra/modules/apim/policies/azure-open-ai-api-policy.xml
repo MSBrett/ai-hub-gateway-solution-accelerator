@@ -40,8 +40,12 @@
             return body.ToString();
         }</set-body>
 
-        <!-- Step 3.2: Rewrite URL to remove /deployments/{deployment-id} path -->
-        <rewrite-uri template="/chat/completions" copy-unmatched-params="true" />
+        <!-- Step 3.1: capture original API path -->
+         <set-variable name="openAIRewriteTemplate" value="@{
+                string requestedModel = (string)context.Variables["requestedModel"];
+                string path = context.Request.Url.Path.TrimStart('/');
+                return string.Format("openai/{0}", path);
+            }" />
         
         <!-- Override api-version query parameter if clients are getting 404 due to mismatched api-version -->
         <!-- <set-query-parameter name="api-version" exists-action="override">
@@ -69,6 +73,9 @@
 
         <!-- Step 7: Configure collecting usage metrics -->
         <include-fragment fragment-id="set-llm-usage" />
+
+        <!-- Rewrite URL while preserving the original API path -->
+		<rewrite-uri template="@((string)context.Variables["openAIRewriteTemplate"])" copy-unmatched-params="true" />
     </inbound>
     <backend>
         <!--
@@ -90,17 +97,12 @@
     <on-error>
         <base />
         <!--
-            Error Handling and Custom Metrics
-            Purpose: Pushes custom metrics for 429 throttling errors to enable Azure Monitor alerts
+            Error Handling
+            Purpose: Pushes custom metrics for errors to enable Azure Monitor alerts
             
-            Variables Set:
-            - service-name: Identifies the service generating the error
-            - target-deployment: The model that was requested when error occurred
-            
-            Integration: Uses throttling-events fragment to send metrics to monitoring system
+            Integration: Uses raise-throttling-events fragment to send metrics to monitoring system for 429 responses
         -->
-        <set-variable name="service-name" value="Universal LLM API" />
-        <set-variable name="target-deployment" value="@((string)context.Variables["requestedModel"])" />
-        <include-fragment fragment-id="throttling-events" />
+        
+        <include-fragment fragment-id="raise-throttling-events" />
     </on-error>
 </policies>

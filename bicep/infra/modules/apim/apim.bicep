@@ -83,6 +83,28 @@ param isMCPSampleDeployed bool = false
 @description('Configuration array for LLM backends supporting multiple providers and models')
 param llmBackendConfig array = []
 
+@description('Enable APIM cache configuration backed by Azure Managed Redis')
+param enableRedisCache bool = false
+
+@secure()
+@description('Runtime connection string to the Azure Managed Redis instance (used for APIM caches).')
+param redisCacheConnectionString string = ''
+
+@description('Resource ID of the Azure Managed Redis instance (optional, used for traceability)')
+param redisCacheResourceId string = ''
+
+@description('APIM cache entity name for the Redis-backed cache')
+param apimRedisCacheName string = 'redis-cache'
+
+@description('Enable an APIM backend that targets the AI Foundry embeddings endpoint')
+param enableEmbeddingsBackend bool = false
+
+@description('URL for the AI Foundry embeddings endpoint (should be /models/embeddings on the primary Foundry resource)')
+param embeddingsBackendUrl string = ''
+
+@description('APIM backend ID for the embeddings backend')
+param embeddingsBackendId string = 'foundry-embeddings'
+
 var apimPublicNetworkAccess = apimV2PublicNetworkAccess ? 'Enabled' : 'Disabled'
 
 var openAiApiBackendId = 'openai-backend'
@@ -341,6 +363,36 @@ module llmPolicyFragments './llm-policy-fragments.bicep' =  {
     policyFragmentConfig: llmBackendPools.outputs.policyFragmentConfig
     managedIdentityClientId: managedIdentity.properties.clientId
     llmBackendConfig: llmBackendConfig
+  }
+}
+
+resource redisCache 'Microsoft.ApiManagement/service/caches@2024-06-01-preview' = if (enableRedisCache) {
+  name: apimRedisCacheName
+  parent: apimService
+  properties: {
+    connectionString: redisCacheConnectionString
+    useFromLocation: 'default'
+    description: 'Azure Managed Redis cache for APIM Semantic Cache'
+  }
+}
+
+resource embeddingsBackend 'Microsoft.ApiManagement/service/backends@2024-06-01-preview' = if (enableEmbeddingsBackend) {
+  name: embeddingsBackendId
+  parent: apimService
+  properties: {
+    description: 'AI Foundry embeddings backend'
+    url: embeddingsBackendUrl
+    protocol: 'http'
+    credentials: {
+      managedIdentity: {
+        clientId: managedIdentity.properties.clientId
+        resource: 'https://cognitiveservices.azure.com'
+      }
+    }
+    tls: {
+      validateCertificateChain: true
+      validateCertificateName: true
+    }
   }
 }
 
