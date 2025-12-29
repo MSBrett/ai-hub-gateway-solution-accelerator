@@ -611,7 +611,7 @@ var modelsGroupedByInstance = [for (instance, i) in aiFoundryInstances: {
 var llmBackendConfig = [for (instance, i) in aiFoundryInstances: {
   backendId: !empty(instance.name) ? '${instance.name}-${i}' : 'aif-${resourceToken}-${i}'
   backendType: 'ai-foundry'
-  endpoint: 'https://${!empty(instance.name) ? instance.name : 'aif-${resourceToken}-${i}'}.services.ai.azure.com/'
+  endpoint: 'https://${!empty(instance.name) ? instance.name : 'aif-${resourceToken}-${i}'}.cognitiveservices.azure.com/'
   authScheme: 'managedIdentity'
   supportedModels: modelsGroupedByInstance[i].models
   priority: 1

@@ -3316,9 +3316,9 @@
             "required": true,
             "schema": {
               "type": "string",
-              "example": "2024-05-01-preview",
+              "example": "2025-03-01-preview",
               "description": "api version",
-              "default": "2024-05-01-preview"
+              "default": "2025-03-01-preview"
             }
           }
         ],
