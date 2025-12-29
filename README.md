@@ -264,7 +264,7 @@ Master AI Citadel Governance Hub implementation and operations with our detailed
 
 | Guide | Description |
 |-------|-------------|
-| [**🆕 AI Citadel Access Contracts Guide**](./guides/citadel-access-contracts.md) | Guide on integrating new/existing AI apps & agents with AI Citadel Governance Hub |
+| [**🆕 AI Citadel Access Contracts Guide**](./guides/Citadel-Access-Contracts.md) | Guide on integrating new/existing AI apps & agents with AI Citadel Governance Hub |
 | [**🆕 AI Citadel Access Contracts Policies**](./guides/citadel-access-contracts-policy.md) | Deep dive into policy configurations for AI Citadel Access Contracts |
 
 
