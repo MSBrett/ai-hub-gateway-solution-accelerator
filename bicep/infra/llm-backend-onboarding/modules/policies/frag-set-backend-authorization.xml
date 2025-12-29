@@ -26,10 +26,11 @@
                 <value>@("Bearer " + (string)context.Variables["msi-access-token"])</value>
             </set-header>
             
-            <!-- Rewrite URL to inject /deployments/{model}/ path for Azure OpenAI API format -->
+            <!-- Rewrite URL to inject /openai/deployments/{deployment}/ prefix while preserving the original API path -->
             <set-variable name="rewriteTemplate" value="@{
                 string requestedModel = (string)context.Variables["requestedModel"];
-                return string.Format("/deployments/{0}/chat/completions", requestedModel);
+                string path = context.Request.Url.Path.TrimStart('/');
+                return string.Format("openai/deployments/{0}/{1}", requestedModel, path);
             }" />
             <rewrite-uri template="@((string)context.Variables["rewriteTemplate"])" copy-unmatched-params="true" />
         </when>
@@ -40,6 +41,13 @@
             <set-header name="Authorization" exists-action="override">
                 <value>@("Bearer " + (string)context.Variables["msi-access-token"])</value>
             </set-header>
+
+             <!-- Rewrite URL to /models/{original-api-path} format for AI Foundry -->
+            <set-variable name="rewriteTemplate" value="@{
+                string path = context.Request.Url.Path.TrimStart('/');
+                return string.Format("models/{0}", path);
+            }" />
+            <rewrite-uri template="@((string)context.Variables["rewriteTemplate"])" copy-unmatched-params="true" />
         </when>
         <when condition="@(((string)context.Variables["targetPoolType"]) == "external")">
             <!-- External LLM Provider: Authentication handled by backend credentials configuration -->
