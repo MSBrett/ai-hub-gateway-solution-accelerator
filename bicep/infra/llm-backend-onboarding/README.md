@@ -65,7 +65,7 @@ param llmBackendConfig = [
   {
     backendId: 'aif-citadel-primary'
     backendType: 'ai-foundry'
-    endpoint: 'https://aif-RESOURCE_TOKEN-0.services.ai.azure.com/models'
+    endpoint: 'https://aif-RESOURCE_TOKEN-0.cognitiveservices.azure.com/'
     authScheme: 'managedIdentity'
     supportedModels: [
       { name: 'gpt-4o', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2024-11-20' }
@@ -82,7 +82,7 @@ param llmBackendConfig = [
 ### 3. Deploy
 
 ```bash
-az deployment sub create --name llm-backend-onboarding --location eastus --template-file main.bicep --parameters llm-backends-dev-local.bicepparam
+az deployment sub create --name llm-backend-onboarding --location swedencentral --template-file main.bicep --parameters llm-backends-dev-local.bicepparam
 ```
 
 ## Configuration Reference

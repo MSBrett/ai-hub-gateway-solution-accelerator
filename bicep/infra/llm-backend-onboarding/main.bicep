@@ -48,7 +48,7 @@ param apimManagedIdentity object
     {
       backendId: 'ai-foundry-eastus-gpt4'
       backendType: 'ai-foundry'
-      endpoint: 'https://my-foundry.services.ai.azure.com/models'
+      endpoint: 'https://my-foundry.services.ai.azure.com/'
       authScheme: 'managedIdentity'
       supportedModels: [
         { name: 'gpt-4o', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2024-11-20' }
