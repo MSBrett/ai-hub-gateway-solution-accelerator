@@ -6,16 +6,16 @@ Automate the onboarding of AI use cases to your APIM-based AI Gateway with a str
 
 This package eliminates manual APIM configuration by providing:
 - 📦 **Automated Product Creation**: Per-service APIM products with naming `<serviceCode>-<BU>-<UseCase>-<ENV>`
-- 🔌 **API Integration**: Automatic API attachment with custom or default policies
-- 🔑 **Subscription Management**: Auto-generated subscriptions with secure API keys
+- 🔌 **API Integration**: Automatic API attachment to product with custom or default policies
+- 🔑 **Subscription Management**: Auto-generated subscription with secure API keys
 - 🔐 **Flexible Secret Storage**: Optional Azure Key Vault integration or direct credential output
-- 📝 **Declarative Configuration**: Simple `.bicepparam` files for version control
+- 📝 **Declarative Configuration**: Simple `.bicepparam` & `.xml` files for version control per use case
 
 ## What Gets Created
 
 | Resource | Naming Pattern | Description |
 |----------|----------------|-------------|
-| **APIM Product** | `{code}-{BU}-{UseCase}-{ENV}` | Product per service (e.g., `OAI-Healthcare-PatientAssistant-DEV`) |
+| **APIM Product** | `{code}-{BU}-{UseCase}-{ENV}` | Product per service (e.g., `LLM-Healthcare-PatientAssistant-DEV`) with attached APIs and policies |
 | **APIM Subscription** | `{product}-SUB-01` | Subscription with API key |
 | **Key Vault Secrets** | `{secretName}` | Endpoint URL and API key (optional) |
 
@@ -26,8 +26,22 @@ This package eliminates manual APIM configuration by providing:
 📋 **Policy Templates**: Pre-built policies for common use cases  
 🎯 **Multi-Service Support**: Onboard multiple AI services in one deployment  
 🔒 **Secure by Default**: Credentials stored in Key Vault or marked as secrets  
-📊 **Production Ready**: Includes 3 complete real-world examples
+📊 **Production Ready**: Designed for scale and aligned with DevOps practices 
 ---
+
+## Deployment quick reference
+
+below are the high-level steps to deploy the use case onboarding Bicep package before diving into the detailed documentation:
+
+0. **Create a folder dedicated for use cases contracts**: a folder like `usecases-contracts` in the citadel-access-contracts module to hold your use case specific files. 
+1. **Create a use case contract folder**: under the use cases contracts folder, create a new folder for your use case (e.g., `businessunit-usecasename-environment`).
+1. **Prepare Parameter File**: Create new use case `.bicepparam` file for your use case (you can use `main.bicepaparam` as a base) under the dedicated folder.
+2. **Create/Customize APIM Policy**: Use default or create a custom XML policy. For simplicity, policy file can be named `policy.xml`.
+3. **Deploy template with the prepared parameter file**:
+```bash
+# This can be executed in CLI or through a DevOps pipeline
+az deployment sub create --template-file main.bicep --parameters @usecase.parameters.json
+```
 
 ## 🗺️ Architecture Overview
 
@@ -37,16 +51,16 @@ This package eliminates manual APIM configuration by providing:
 flowchart TB
     subgraph Input["📥 Inputs"]
         P1[bicepparam file]
-        P2[APIM coordinates]
+        P2[APIM resource details]
         P3[Use case metadata]
-        P4[API name mappings]
+        P4[API-id name mappings]
         P5[Policy XML files]
     end
 
     subgraph Deploy["🚀 Deployment"]
         D1[main.bicep]
         D2[Create Products]
-        D3[Attach APIs]
+        D3[Attach APIs to Products]
         D4[Apply Policies]
         D5[Create Subscriptions]
         D6{Use Key Vault?}
@@ -99,8 +113,10 @@ sequenceDiagram
 
 ## 📁 Repository Structure
 
+This is a submodule focused on Citadel Access Contracts. The folder structure is as follows:
+
 ```
-usecase-onboarding/
+citadel-access-contracts/
 ├── main.bicep                          # Main orchestration template
 ├── modules/
 │   ├── apimOnboardService.bicep        # Product + subscription creation
@@ -135,39 +151,62 @@ usecase-onboarding/
 |-----------|------|----------|-------------|---------|
 | `apim` | object | ✅ | APIM instance coordinates | `{ subscriptionId, resourceGroupName, name }` |
 | `keyVault` | object | ✅* | Key Vault for secrets (*required even if not used) | `{ subscriptionId, resourceGroupName, name }` |
-| `useTargetAzureKeyVault` | bool | ❌ | Store secrets in Key Vault (default: `true`) | `true` or `false` |
+| `useTargetAzureKeyVault` | bool | ❌ | Store secrets in Key Vault (default: `false`) | `true` or `false` |
 | `useCase` | object | ✅ | Use case naming context | `{ businessUnit, useCaseName, environment }` |
 | `apiNameMapping` | object | ✅ | Map service codes to API names | `{ OAI: ["azure-openai-service-api"], ... }` |
 | `services` | array | ✅ | Services to onboard | See [Services Schema](#services-schema) below |
 | `productTerms` | string | ❌ | Product terms of service | "By using this product..." |
 
-### Services Schema
+
+### Service Code mapping
+
+Map service codes (which is a short acronym that represents the category of services fall under) to their API-id in APIM:
+
+```bicep
+{
+  LLM: ["azure-openai-api", "universal-llm-api"]
+  OAIRT: ["openai-realtime-ws-api"]
+  DOC: ["document-intelligence-api", "document-intelligence-api-legacy"]
+  SRCH: ["azure-ai-search-index-api"]
+  // ... add more services
+}
+
+```
+
+**Note**: API-id must already exist in your APIM instance. The deployment will fail if an API name is not found.
+
+Above is the list of supported APIs that are provisioned by default by the accelerator.
+
+#### Adding custom APIs
+
+You can onboard any number of other APIs as well to support your custom services. Add the newly added API-ids to the mapping above accordingly.
+
+#### Multi-service Bundles
+
+Mapping currently is suggested to focus on a specific category of services (e.g., LLM, Document Intelligence, etc.)
+
+You can create unique mappings that mix different service types under one bundle if needed (this will require the product policy to be aware of that mix to apply the correct policies based on the service type like using tokens-per-mint limits for LLM and request-per-min limits for Document Intelligence).
+
+---
+
+### Use case service assignment schema
 
 Each service in the `services` array:
 
 ```bicep
 {
-  code: string              // Service code (e.g., "OAI", "DOC", "SRCH")
+  code: string              // Service code (e.g., "LLM", "DOC", "SRCH")
   endpointSecretName: string // Name for endpoint secret in Key Vault
   apiKeySecretName: string   // Name for API key secret in Key Vault
   policyXml: string          // Optional: Custom policy XML (empty = use default)
 }
 ```
 
-### API Name Mapping Schema
+This will create one APIM product + subscription + Key Vault secrets per service code and leverage the referenced policy XML for that product.
 
-Map service codes to their API names in APIM:
+This is an array to allow multiple services to be assigned to specific use case (like granting both LLM and document intelligence access to the same application).
 
-```bicep
-{
-  LLM: ["azure-openai-api", "universal-llm-api"]
-  DOC: ["document-intelligence-api", "document-intelligence-api-legacy"]
-  SRCH: ["azure-ai-search-index-api"]
-  // ... add more services
-}
-```
-
-**Note**: API names must already exist in your APIM instance. The deployment will fail if an API name is not found.
+But each service will have its own product + subscription + secrets (i.e llm will have a different key from document intelligence).
 
 ---
 
@@ -191,7 +230,7 @@ Naming examples
 
 | Resource | Requirement | How to Verify |
 |----------|-------------|---------------|
-| **APIM Instance** | Published APIs matching your `apiNameMapping` | `az apim api list -g <rg> -n <apim-name>` |
+| **Citadel Compliant APIM Instance** | with published APIs matching your `apiNameMapping` | `az apim api list -g <rg> -n <apim-name>` |
 | **Azure Key Vault** | Accessible with secret set permissions (if using KV) | `az keyvault show -n <kv-name>` |
 | **APIs in APIM** | APIs already exist with correct names | Check APIM portal → APIs |
 
@@ -202,50 +241,30 @@ The deployment identity needs:
 | Scope | Role | Purpose |
 |-------|------|---------|
 | APIM Resource Group | `API Management Service Contributor` | Create products and subscriptions |
-| Key Vault (if used) | `Key Vault Secrets Officer` | Write secrets |
+| Target Key Vault (if used) | `Key Vault Secrets Officer` | Write secrets |
 | Subscription | `Reader` | Reference existing resources |
-
-### Verify Permissions
-
-```powershell
-# Check APIM permissions
-az role assignment list `
-  --scope /subscriptions/<sub-id>/resourceGroups/<apim-rg> `
-  --query "[?principalName=='<your-identity>'].roleDefinitionName"
-
-# Check Key Vault permissions (if using)
-az role assignment list `
-  --scope /subscriptions/<sub-id>/resourceGroups/<kv-rg>/providers/Microsoft.KeyVault/vaults/<kv-name> `
-  --query "[?principalName=='<your-identity>'].roleDefinitionName"
-```
 
 ---
 
 ## ⚡ Quick Start Guide
 
-### Step 1: Choose a Use Case Template
+### Step 1: Create base use case folder
 
-Pick from our ready-to-use examples:
+A custom folder dedeciated for the use case with the a copy of both the main.bicepparam and ai-default-policy.xml as base to start with.
 
-1. **[Healthcare Chatbot](samples/healthcare-chatbot/)** - HIPAA-compliant patient assistant
-2. **[Customer Support Agent](samples/customer-support-agent/)** - Multi-tier support with RAG
-3. **[Document Analysis Pipeline](samples/document-analysis-pipeline/)** - OCR + summarization
+```powershell
+mkdir bicep/infra/citadel-access-contracts/usecases-contracts/healthcare-chatbot-dev
+cd bicep/infra/citadel-access-contracts/usecases-contracts/healthcare-chatbot-dev
+cp ../../main.bicepparam healthcare-chatbot-dev.bicepparam
+cp ../../policies/default-ai-product-policy.xml policy.xml
+```
 
-Each example includes:
-- Complete `README.md` with usage examples
-- Pre-configured `.bicepparam` file
-- Custom APIM policy for the use case
-- Python code samples
 
 ### Step 2: Configure Your Parameters
 
 ```powershell
-# Copy the template
-cd bicep/infra/usecase-onboarding/samples/healthcare-chatbot
-cp usecase.bicepparam my-usecase.bicepparam
-
-# Edit my-usecase.bicepparam
-code my-usecase.bicepparam
+# Edit healthcare-chatbot-dev.bicepparam
+code healthcare-chatbot-dev.bicepparam
 ```
 
 Update these values:
@@ -275,13 +294,13 @@ param useCase = {
 
 // Verify these API names exist in your APIM
 param apiNameMapping = {
-  OAI: ['azure-openai-service-api']
-  DOC: ['document-intelligence-api']
+  LLM: ['azure-openai-api', 'universal-llm-api']
+  DOC: ['document-intelligence-api', 'document-intelligence-api-legacy']
 }
 
 param services = [
   {
-    code: 'OAI'
+    code: 'LLM'
     endpointSecretName: 'OPENAI-ENDPOINT'
     apiKeySecretName: 'OPENAI-API-KEY'
     policyXml: loadTextContent('policy.xml')  // or '' for default
@@ -293,17 +312,12 @@ param services = [
 ### Step 3: Validate Configuration
 
 ```powershell
-# Check that APIs exist in APIM
-az apim api show `
-  --resource-group YOUR-APIM-RG `
-  --service-name YOUR-APIM-NAME `
-  --api-id azure-openai-service-api
 
 # Preview what will be created
 az deployment sub what-if `
-  --location eastus `
+  --location swedencentral `
   --template-file ../../main.bicep `
-  --parameters my-usecase.bicepparam
+  --parameters healthcare-chatbot-dev.bicepparam
 ```
 
 ### Step 4: Deploy
@@ -312,9 +326,9 @@ az deployment sub what-if `
 # Deploy at subscription scope
 az deployment sub create `
   --name healthcare-chatbot-onboarding `
-  --location eastus `
+  --location swedencentral `
   --template-file ../../main.bicep `
-  --parameters my-usecase.bicepparam
+  --parameters healthcare-chatbot-dev.bicepparam
 ```
 
 ### Step 5: Verify Deployment
@@ -324,13 +338,13 @@ az deployment sub create `
 az apim product list `
   --resource-group YOUR-APIM-RG `
   --service-name YOUR-APIM-NAME `
-  --query "[?contains(name, 'Healthcare-PatientAssistant')].{Name:name, State:state}"
+  --query "[?contains(name, 'REPLACE-PRODUCT-NAME')].{Name:name, State:state}"
 
 # Check subscriptions
 az apim subscription list `
   --resource-group YOUR-APIM-RG `
   --service-name YOUR-APIM-NAME `
-  --query "[?contains(displayName, 'Healthcare-PatientAssistant')]"
+  --query "[?contains(displayName, 'REPLACE-PRODUCT-NAME')]"
 
 # If using Key Vault, check secrets
 az keyvault secret list `
@@ -356,8 +370,10 @@ api_key = kv_client.get_secret("openai-api-key").value
 
 # Use with your application
 print(f"Endpoint: {endpoint}")
-# api_key is ready to use as Ocp-Apim-Subscription-Key header
+# api_key is ready to use as api-key header
 ```
+
+Also you can use the [citadel-governance-hub-primary-tests](../../../validation/citadel-governance-hub-primary-tests.ipynb) notebook to validate end-to-end connectivity of the newly created access contract.
 
 ---
 
@@ -370,12 +386,10 @@ print(f"Endpoint: {endpoint}")
 **Services**: Azure OpenAI + Document Intelligence
 
 **Key Features**:
-- Model restrictions (GPT-4o, GPT-4, GPT-3.5-Turbo only)
-- Content safety and compliance logging
+- Model restrictions (GPT-4o, GPT-4.1 only)
+- Content safety and compliance logging of level 4
 - Medical document processing
 - Token limits: 50K/min per subscription
-
-**[View Full Documentation →](samples/healthcare-chatbot/README.md)**
 
 ```powershell
 # Quick deploy
@@ -399,8 +413,6 @@ az deployment sub create --location eastus --template-file ../../main.bicep --pa
 - Token cost tracking per request
 - Support for GPT-4o-mini for cost optimization
 
-**[View Full Documentation →](samples/customer-support-agent/README.md)**
-
 ```powershell
 # Quick deploy
 cd samples/customer-support-agent
@@ -423,8 +435,6 @@ az deployment sub create --location eastus --template-file ../../main.bicep --pa
 - Per-request cost estimation
 - Multi-model routing (GPT-4o, GPT-4o-mini, GPT-4-turbo)
 - Separate policies for each service
-
-**[View Full Documentation →](samples/document-analysis-pipeline/README.md)**
 
 ```powershell
 # Quick deploy
@@ -461,17 +471,17 @@ param keyVault = {
 ```python
 from azure.keyvault.secrets import SecretClient
 kv_client = SecretClient(vault_url="https://<kv-name>.vault.azure.net/", credential=credential)
-endpoint = kv_client.get_secret("openai-endpoint").value
+endpoint = kv_client.get_secret("llm-endpoint").value
 ```
 
 ### Option 2: Direct Output (CI/CD)
 
-**When to use**: CI/CD pipelines, serverless functions, non-Azure environments
+**When to use**: CI/CD pipelines, serverless functions, non-Azure environments where these values needs to be stored in some other secret store
 
 ```bicep
 param useTargetAzureKeyVault = false
 
-// keyVault still required but can use placeholders
+// keyVault still required but can use placeholders as values are not considered.
 param keyVault = {
   subscriptionId: '00000000-0000-0000-0000-000000000000'
   resourceGroupName: 'placeholder'
@@ -490,12 +500,12 @@ $output = az deployment sub show `
   --name my-deployment `
   --query properties.outputs.endpoints.value -o json | ConvertFrom-Json
 
-$oaiEndpoint = ($output | Where-Object { $_.code -eq 'OAI' }).endpoint
-$oaiKey = ($output | Where-Object { $_.code -eq 'OAI' }).apiKey
+$oaiEndpoint = ($output | Where-Object { $_.code -eq 'LLM' }).endpoint
+$oaiKey = ($output | Where-Object { $_.code -eq 'LLM' }).apiKey
 
-# Store in CI/CD variables
-Write-Host "##vso[task.setvariable variable=OAI_ENDPOINT;issecret=true]$oaiEndpoint"
-Write-Host "##vso[task.setvariable variable=OAI_KEY;issecret=true]$oaiKey"
+# Store in CI/CD variables (NOT RECOMMENDED. Just for demonstration)
+Write-Host "##vso[task.setvariable variable=LLM_ENDPOINT;issecret=true]$oaiEndpoint"
+Write-Host "##vso[task.setvariable variable=LLM_KEY;issecret=true]$oaiKey"
 ```
 
 ⚠️ **Security Note**: When using direct output, handle credentials as secrets in your CI/CD system.
@@ -520,116 +530,32 @@ param services = [
 ```
 
 **Default policy includes**:
-- Basic rate limiting (100 req/min)
-- Model validation
-- Token limits
+- Model restrictions (GPT-4o, deepseek-r1)
+- Token limits (300 tokens/min + 10,000 tokens/month)
 - Content safety checks
 
 ### Creating Custom Policy
 
 **Step 1**: Create policy XML file in your use case folder
 
-```xml
-<!-- my-custom-policy.xml -->
-<policies>
-    <inbound>
-        <base />
-        <!-- Your custom logic -->
-        <rate-limit-by-key calls="500" renewal-period="60" counter-key="@(context.Subscription.Id)" />
-        <set-header name="X-Custom-Header" exists-action="override">
-            <value>my-value</value>
-        </set-header>
-    </inbound>
-    <backend>
-        <base />
-    </backend>
-    <outbound>
-        <base />
-    </outbound>
-    <on-error>
-        <base />
-    </on-error>
-</policies>
-```
+You can use the [default-ai-product-policy.xml](./policies/default-ai-product-policy.xml) as a base policy for LLM and extend/modify it as needed.
 
-**Step 2**: Reference in bicepparam
+Additional policy capabilities can be found in [Citadel-Access-Contracts-Policy.md](../../../guides/citadel-access-contracts-policy.md) for more options and patterns that can be leveraged.
+
+>Note: APIM has power policy engine that can be used even beyond what is provided in Citadel Governnace Hub. Leverage agentic development like GitHub Copilot to help you create custom policies based on your requirements.
+
+**Step 2**: Reference policy in bicepparam
 
 ```bicep
 param services = [
   {
-    code: 'OAI'
-    endpointSecretName: 'OAI-ENDPOINT'
-    apiKeySecretName: 'OAI-KEY'
+    code: 'LLM'
+    endpointSecretName: 'LLM-ENDPOINT'
+    apiKeySecretName: 'LLM-KEY'
     policyXml: loadTextContent('my-custom-policy.xml')
   }
 ]
 ```
-
-### Policy Best Practices
-
-✅ **Always include `<base />`** in each section to inherit gateway policies  
-✅ **Use variables** for dynamic values: `@(context.Subscription.Id)`  
-✅ **Add error handling** in `<on-error>` section  
-✅ **Log important headers** for troubleshooting  
-✅ **Test policies** in APIM portal before deployment  
-
-### Common Policy Patterns
-
-<details>
-<summary><b>Model Allowlist</b></summary>
-
-```xml
-<set-variable name="requestedModel" value="@{
-    var body = context.Request.Body?.As&lt;JObject&gt;(preserveContent: true);
-    return body?[&quot;model&quot;]?.ToString() ?? string.Empty;
-}" />
-
-<choose>
-    <when condition="@(!new [] { &quot;gpt-4o&quot;, &quot;gpt-4&quot; }.Contains(context.Variables.GetValueOrDefault&lt;string&gt;(&quot;requestedModel&quot;, &quot;&quot;)))">
-        <return-response>
-            <set-status code="403" reason="Forbidden" />
-            <set-body>Model not allowed</set-body>
-        </return-response>
-    </when>
-</choose>
-```
-</details>
-
-<details>
-<summary><b>Tier-Based Rate Limiting</b></summary>
-
-```xml
-<set-variable name="tier" value="@(context.Request.Headers.GetValueOrDefault(&quot;X-Tier&quot;, &quot;standard&quot;))" />
-
-<choose>
-    <when condition="@(context.Variables.GetValueOrDefault&lt;string&gt;(&quot;tier&quot;) == &quot;premium&quot;)">
-        <rate-limit-by-key calls="300" renewal-period="60" counter-key="@(context.Subscription.Id)" />
-    </when>
-    <otherwise>
-        <rate-limit-by-key calls="100" renewal-period="60" counter-key="@(context.Subscription.Id)" />
-    </otherwise>
-</choose>
-```
-</details>
-
-<details>
-<summary><b>Token Usage Tracking</b></summary>
-
-```xml
-<!-- In outbound section -->
-<set-variable name="usage" value="@{
-    var response = context.Response.Body.As&lt;JObject&gt;(preserveContent: true);
-    return response?[&quot;usage&quot;];
-}" />
-
-<set-header name="X-Tokens-Used" exists-action="override">
-    <value>@{
-        var usage = context.Variables.GetValueOrDefault&lt;JToken&gt;(&quot;usage&quot;);
-        return usage?[&quot;total_tokens&quot;]?.ToString() ?? &quot;0&quot;;
-    }</value>
-</set-header>
-```
-</details>
 
 ---
 
@@ -641,18 +567,18 @@ Onboard multiple AI services simultaneously:
 
 ```bicep
 param apiNameMapping = {
-  OAI: ['azure-openai-service-api']
-  DOC: ['document-intelligence-api']
+  LLM: ['azure-openai-api', 'universal-llm-api']
+  DOC: ['document-intelligence-api', 'document-intelligence-api-legacy']
   SRCH: ['azure-ai-search-index-api']
   OAIRT: ['openai-realtime-ws-api']
 }
 
 param services = [
   {
-    code: 'OAI'
-    endpointSecretName: 'MULTI-OAI-ENDPOINT'
-    apiKeySecretName: 'MULTI-OAI-KEY'
-    policyXml: loadTextContent('oai-policy.xml')
+    code: 'LLM'
+    endpointSecretName: 'MULTI-LLM-ENDPOINT'
+    apiKeySecretName: 'MULTI-LLM-KEY'
+    policyXml: loadTextContent('llm-policy.xml')
   }
   {
     code: 'DOC'
@@ -669,64 +595,7 @@ param services = [
 ]
 ```
 
-**Result**: Creates 3 APIM products, 3 subscriptions, 6 Key Vault secrets
-
-### API with Multiple Versions
-
-Include multiple API versions for backward compatibility:
-
-```bicep
-param apiNameMapping = {
-  DOC: [
-    'document-intelligence-api',       // Latest version
-    'document-intelligence-api-legacy' // Legacy support
-  ]
-}
-```
-
-Both APIs will be added to the same product.
-
-### Environment-Specific Configurations
-
-Create environment-specific parameter files:
-
-```
-samples/my-usecase/
-├── README.md
-├── policy.xml
-├── usecase.dev.bicepparam
-├── usecase.test.bicepparam
-└── usecase.prod.bicepparam
-```
-
-**usecase.dev.bicepparam**:
-```bicep
-param useCase = {
-  businessUnit: 'Engineering'
-  useCaseName: 'MyApp'
-  environment: 'DEV'
-}
-// Lower rate limits for dev
-```
-
-**usecase.prod.bicepparam**:
-```bicep
-param useCase = {
-  businessUnit: 'Engineering'
-  useCaseName: 'MyApp'
-  environment: 'PROD'
-}
-// Higher rate limits for production
-```
-
-Deploy:
-```powershell
-# Dev
-az deployment sub create --template-file ../../main.bicep --parameters usecase.dev.bicepparam
-
-# Prod
-az deployment sub create --template-file ../../main.bicep --parameters usecase.prod.bicepparam
-```
+**Result**: Creates 3 APIM products, 3 subscriptions, 6 Key Vault secrets (endpoint + key for each service).
 
 ---
 
@@ -803,50 +672,6 @@ Write-Host "##vso[task.setvariable variable=OAI_KEY;issecret=true]$($oaiCreds.ap
 | **403 - Model Not Allowed** | Model blocked by policy | Check allowed models in policy XML |
 | **429 - Rate Limit** | Exceeded rate limit | Reduce request frequency or adjust policy |
 
-### Debugging Steps
-
-1. **Verify API exists**:
-```powershell
-az apim api show `
-  --resource-group YOUR-APIM-RG `
-  --service-name YOUR-APIM-NAME `
-  --api-id azure-openai-service-api
-```
-
-2. **Check product creation**:
-```powershell
-az apim product show `
-  --resource-group YOUR-APIM-RG `
-  --service-name YOUR-APIM-NAME `
-  --product-id OAI-Healthcare-PatientAssistant-DEV
-```
-
-3. **Verify subscription**:
-```powershell
-az apim subscription show `
-  --resource-group YOUR-APIM-RG `
-  --service-name YOUR-APIM-NAME `
-  --subscription-id OAI-Healthcare-PatientAssistant-DEV-SUB-01
-```
-
-4. **Test API call**:
-```powershell
-$key = az keyvault secret show --vault-name <kv-name> --name openai-api-key --query value -o tsv
-$endpoint = az keyvault secret show --vault-name <kv-name> --name openai-endpoint --query value -o tsv
-
-curl -X POST "$endpoint/chat/completions?api-version=2024-02-01" `
-  -H "api-key: $key" `
-  -H "Content-Type: application/json" `
-  -d '{"model":"gpt-4o","messages":[{"role":"user","content":"test"}]}'
-```
-
-5. **View APIM logs**:
-```powershell
-az monitor log-analytics query `
-  --workspace YOUR-WORKSPACE-ID `
-  --analytics-query "ApiManagementGatewayLogs | where OperationId contains 'openai' | take 10"
-```
-
 ### Getting Help
 
 - Check API errors in APIM Test Console
@@ -856,139 +681,10 @@ az monitor log-analytics query `
 
 ---
 
-## 💼 Production Deployment Checklist
-
-Before deploying to production:
-
-- [ ] **Security Review**
-  - [ ] Policies enforce approved models only
-  - [ ] Rate limits configured appropriately
-  - [ ] Content safety enabled (if applicable)
-  - [ ] Secrets stored in Key Vault
-  - [ ] Managed identities used for authentication
-
-- [ ] **Testing**
-  - [ ] Test successful API calls
-  - [ ] Verify rate limits trigger correctly
-  - [ ] Test error handling (401, 403, 429, 500)
-  - [ ] Validate policy behavior
-
-- [ ] **Monitoring**
-  - [ ] Event Hub logging configured
-  - [ ] Application Insights connected
-  - [ ] Alerts set up for quota thresholds
-  - [ ] Power BI dashboard created
-
-- [ ] **Documentation**
-  - [ ] Team onboarding guide created
-  - [ ] API usage examples provided
-  - [ ] Support contact information shared
-  - [ ] Key rotation procedures documented
-
-- [ ] **Compliance**
-  - [ ] Data residency requirements met
-  - [ ] Audit logging enabled
-  - [ ] Terms of service reviewed
-  - [ ] Privacy policies applied
-
----
-
-## 📚 Additional Resources
-
-### Related Guides
-
-- [APIM Configuration Guide](../../guides/apim-configuration.md)
-- [Azure OpenAI Onboarding](../../guides/LLM-Backend-Onboarding.md)
-- [Power BI Dashboard Setup](../../guides/power-bi-dashboard.md)
-- [PII Masking Policies](../../guides/pii-masking-apim.md)
-- [Full Deployment Guide](../../guides/full-deployment-guide.md)
-
-### Example Use Cases
-
-1. **[Healthcare Patient Assistant](samples/healthcare-chatbot/)** - HIPAA-compliant conversational AI
-2. **[Customer Support Agent](samples/customer-support-agent/)** - Multi-tier support with RAG
-3. **[Document Analysis Pipeline](samples/document-analysis-pipeline/)** - High-volume OCR + summarization
-
-### External Documentation
-
-- [Azure API Management Policies](https://learn.microsoft.com/azure/api-management/api-management-policies)
-- [Azure OpenAI Service](https://learn.microsoft.com/azure/ai-services/openai/)
-- [Azure Document Intelligence](https://learn.microsoft.com/azure/ai-services/document-intelligence/)
-- [Azure Key Vault](https://learn.microsoft.com/azure/key-vault/)
-- [Bicep Language](https://learn.microsoft.com/azure/azure-resource-manager/bicep/)
-
----
-
-## 🤝 Contributing
-
-Have a new use case to share? We welcome contributions!
-
-1. Fork the repository
-2. Create a new folder under `samples/`
-3. Include:
-   - `README.md` with complete documentation
-   - `usecase.bicepparam` with example parameters
-   - Custom policy XML file(s)
-   - Code samples (Python, C#, etc.)
-4. Submit a pull request
-
----
-
-## 💡 FAQ
-
-<details>
-<summary><b>Can I use the same Key Vault for multiple use cases?</b></summary>
-
-Yes! Multiple deployments can target the same Key Vault. Just ensure secret names don't conflict by using descriptive prefixes (e.g., `healthcare-oai-endpoint`, `support-oai-endpoint`).
-</details>
-
-<details>
-<summary><b>How do I update a policy after deployment?</b></summary>
-
-1. Update the policy XML file
-2. Redeploy with the same parameters
-3. Or manually update in APIM portal: Products → [Your Product] → Policies
-</details>
-
-<details>
-<summary><b>Can I onboard the same service multiple times?</b></summary>
-
-No, each service code can only appear once per use case. If you need multiple configurations, create separate use case deployments with different `useCaseName` values.
-</details>
-
-<details>
-<summary><b>What happens if I redeploy with the same parameters?</b></summary>
-
-Bicep is idempotent - it will update existing resources instead of creating new ones. Products, subscriptions, and secrets will be updated to match the new configuration.
-</details>
-
-<details>
-<summary><b>How do I delete an onboarded use case?</b></summary>
-
-Delete the APIM products and subscriptions:
-```powershell
-az apim product delete --resource-group <rg> --service-name <apim> --product-id <product-id>
-az apim subscription delete --resource-group <rg> --service-name <apim> --subscription-id <sub-id>
-```
-Manually delete Key Vault secrets if needed.
-</details>
-
-<details>
-<summary><b>Can I use this with other AI services like Azure AI Search?</b></summary>
-
-Yes! Add the API name to `apiNameMapping` and configure the service in the `services` array. See the [Customer Support Agent example](samples/customer-support-agent/) for Azure AI Search integration.
-</details>
-
----
-
 ## 📞 Support
 
 For issues or questions:
 - **GitHub Issues**: [Report bugs or request features](https://github.com/Azure-Samples/ai-hub-gateway-solution-accelerator/issues)
 - **Documentation**: Review the guides in `/guides`
-- **Examples**: Check the sample use cases in `/samples`
 
 ---
-
-**Last Updated**: November 2025  
-**Version**: 2.0 (Bicepparam-based)

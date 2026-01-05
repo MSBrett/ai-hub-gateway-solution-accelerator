@@ -70,6 +70,14 @@ Use the below checklist to plan your deployment configuration:
   - [ ] Development (cost-optimized SKUs)
   - [ ] Staging (production SKUs with reduced capacity)
   - [ ] Production (production SKUs with full capacity)
+- [ ] Source Control Strategy
+  - [ ] Single repository with branches per environment
+      - [ ] Branch for original unchanged Citadel Governance Hub repo (synchronized with upstream)
+      - [ ] Branches for dev, staging, production with environment-specific parameter files (apply changes through new parameter files only)
+  - [ ] Separate repositories per environment (with similar branching strategy to point 1)
+  - [ ] Automation Strategy
+      - [ ] Manual deployments using `azd up` or `az deployment sub create`
+      - [ ] CI/CD pipelines (i.e. Azure DevOps or GitHub Actions) for automated deployments
 
 Leverage deployment parameter files ([main.bicepparam](../bicep/infra/main.bicepparam)) to capture these decisions for each environment.
 
@@ -143,6 +151,10 @@ az provider list --query "[?registrationState=='Registered'].namespace" -o table
 
 ## 🎯 Deployment Preparation
 
+Based on your choices in the [Deployment Decisions Checklist](#deployment-decisions-checklist), you can now prepare your deployment configuration.
+
+For source control, make sure you have a working directory linked to your source control repository.
+
 First you need to get the deployment template files:
 
 ```bash
@@ -167,6 +179,8 @@ You can perform the deployment using either `azd up` (recommended) or `az deploy
 ### 1. Parameter Files Strategy
 
 AI Citadel Governance Hub uses **Bicep parameter files (.bicepparam)** for environment-specific configurations.
+
+>NOTE: Always keep a separate copy of your customized parameter files with different names of the main repository `main.bicepparam` to avoid overwriting during updates.
 
 #### Available Parameter Files
 
@@ -608,12 +622,12 @@ param existingLogAnalyticsSubscriptionId = '00000000-0000-0000-0000-000000000000
 
 **Typical Setup:**
 ```
-                  ┌──────────────────────────┐
-                  │ Centralized LAW (Prod)   │
-                  │ - All environments       │
-                  │ - 180d retention         │
-                  │ - Advanced analytics     │
-                  └──────────────────────────┘
+              ┌──────────────────────────┐
+              │ Centralized LAW (Prod)   │
+              │ - All environments       │
+              │ - 180d retention         │
+              │ - Advanced analytics     │
+              └──────────────────────────┘
                             ▲
                             │
          ┌──────────────────┼──────────────────┐
@@ -746,6 +760,10 @@ This repo includes set of validation NoteBooks under `/validation` folder.
 - [llm-backend-onboarding-runner.ipynb](../validation/llm-backend-onboarding-runner.ipynb): Onboard existing LLM backends & configure its routing to the governance hub and validate connectivity.
 
 ---
+
+## Deploy Citadel Governance Hub updates
+
+Once the initial deployment is completed, you can still further updates and enhancements of the governance hub by synchronizing your local repository `original branch` with the upstream changes, then you can create a `Pull-Request` to your environment-specific branch to merge the changes.
 
 ## 🚨 Troubleshooting
 

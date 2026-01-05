@@ -13,6 +13,10 @@ What this delivers
 - 🔐 Writes endpoint URL + subscription primary key to your target Key Vault
 - 🧪 Optional: Wire your app/Container Apps env vars to these Key Vault secrets
 
+Deployment is simple:
+- Prepare a parameter file and APIM policy 
+- Deploy to your target environment:
+  - Azure CLI: `az deployment sub create --template-file main.bicep --parameters @usecase.parameters.json`
 ---
 
 ## 🗺️ Visual overview
@@ -21,21 +25,20 @@ What this delivers
 flowchart TB
   subgraph Input["Inputs (parameters)"]
     P1[APIM: subId, rg, name]
-    P2[Key Vault: subId, rg, name]
+    P2[Key Vault (Optional): subId, rg, name]
     P3[Use Case: BU, Name, ENV]
     P4[Existing Services → API resource IDs]
-    P5[Services selection + optional policy XML]
+    P5[Services selection + custom/default policy XML]
   end
 
   subgraph Orchestrator["main.bicep"]
-    O1[Build product name]
-    O2[Create APIM Product]
-    O3[Attach APIs + Policy]
-    O4[Create Subscription]
-    O5[Store endpoint + key in Key Vault]
+    O1[Create APIM Product]
+    O2[Attach APIs + Policy]
+    O3[Create Subscription]
+    O4[Store endpoint + key in Key Vault (Optional)]
   end
 
-  subgraph Runtime["At runtime"]
+  subgraph Runtime["At runtime (recommended)"]
     A1[App retrieves secrets from Key Vault]
     A2[App calls APIM Gateway]
     A3[APIM forwards to AI Services]
@@ -44,7 +47,7 @@ flowchart TB
   Input --> Orchestrator --> Runtime
 ```
 
-### Runtime request flow
+### Runtime request flow (recommended)
 ```mermaid
 sequenceDiagram
     participant App as Client App
@@ -69,7 +72,7 @@ sequenceDiagram
   - `apimProduct.bicep` – Reusable product module
   - `apimSubscription.bicep` – Reusable subscription module
   - `kvSecrets.bicep` – Creates/updates Key Vault secrets
-- `policies/default-ai-product-policy.xml` – Safe default policy
+- `policies/default-ai-product-policy.xml` – Use-case access default policy
 - `samples/*.parameters.json` – Ready-to-use parameter files (including Financial Assistant)
 
 ---
