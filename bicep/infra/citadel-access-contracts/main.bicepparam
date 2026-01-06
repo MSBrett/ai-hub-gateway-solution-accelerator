@@ -156,9 +156,10 @@ param useCase = {
 // ============================================================================
 param apiNameMapping = {
   LLM: ['universal-llm-api', 'azure-openai-api']
+  DOC: ['document-intelligence-api', 'document-intelligence-api-legacy']
+  SRCH: ['azure-ai-search-index-api']
+  OAIRT: ['openai-realtime-ws-api']
   // Add more service codes and API mappings as needed
-  // DOC: ['document-intelligence-api', 'document-intelligence-api-legacy']
-  // SRCH: ['azure-ai-search-index-api']
 }
 
 // ============================================================================
@@ -213,26 +214,6 @@ param apiNameMapping = {
 //   policyXml: '' // Uses default policy from ./policies/default-ai-product-policy.xml
 // }
 //
-// Full example:
-// param services = [
-//   {
-//     code: 'LLM'
-//     endpointSecretName: 'OPENAI_ENDPOINT'
-//     apiKeySecretName: 'OPENAI_API_KEY'
-//     policyXml: loadTextContent('policies/openai-throttling.xml')
-//   }
-//   {
-//     code: 'DOC'
-//     endpointSecretName: 'DOCINTELL_ENDPOINT'
-//     apiKeySecretName: 'DOCINTELL_API_KEY'
-//     policyXml: '' // Uses default policy
-//   }
-//   {
-//     code: 'SRCH'
-//     endpointSecretName: 'AZURE_AI_SEARCH_INDEX_ENDPOINT'
-//     apiKeySecretName: 'AZURE_AI_SEARCH_INDEX_API_KEY'
-//   }
-// ]
 // ============================================================================
 param services = [
   {

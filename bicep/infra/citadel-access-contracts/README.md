@@ -33,15 +33,17 @@ This package eliminates manual APIM configuration by providing:
 
 below are the high-level steps to deploy the use case onboarding Bicep package before diving into the detailed documentation:
 
-0. **Create a folder dedicated for use cases contracts**: a folder like `usecases-contracts` in the citadel-access-contracts module to hold your use case specific files. 
-1. **Create a use case contract folder**: under the use cases contracts folder, create a new folder for your use case (e.g., `businessunit-usecasename-environment`).
+0. **Create a folder dedicated for use-cases contracts**: a folder like `usecases-contracts` in the citadel-access-contracts module to hold your use case specific files. 
+1. **Create a use-case contract folder**: under the use cases contracts folder, create a new folder for your use case (e.g., `businessunit-usecasename-environment`).
 1. **Prepare Parameter File**: Create new use case `.bicepparam` file for your use case (you can use `main.bicepaparam` as a base) under the dedicated folder.
 2. **Create/Customize APIM Policy**: Use default or create a custom XML policy. For simplicity, policy file can be named `policy.xml`.
 3. **Deploy template with the prepared parameter file**:
 ```bash
 # This can be executed in CLI or through a DevOps pipeline
-az deployment sub create --template-file main.bicep --parameters @usecase.parameters.json
+az deployment sub create --name <use-case-contract-name> --location <location> --template-file main.bicep --parameters <use-case-contract-folder/use-case.bicepparam>
 ```
+
+>NOTE: Ensure that you are updating values according to your environment and folder structure.
 
 ## 🗺️ Architecture Overview
 
@@ -51,9 +53,6 @@ az deployment sub create --template-file main.bicep --parameters @usecase.parame
 flowchart TB
     subgraph Input["📥 Inputs"]
         P1[bicepparam file]
-        P2[APIM resource details]
-        P3[Use case metadata]
-        P4[API-id name mappings]
         P5[Policy XML files]
     end
 
@@ -89,9 +88,9 @@ Below is a suggested flow for client applications (i.e. agents) interacting with
 
 ```mermaid
 sequenceDiagram
-    participant App as Client Application
+    participant App as AI Agent/App
     participant KV as Azure Key Vault
-    participant APIM as APIM Gateway
+    participant APIM as AI Gateway
     participant AI as AI Services
 
     alt Using Key Vault
@@ -105,7 +104,7 @@ sequenceDiagram
     APIM->>APIM: Apply product policy
     APIM->>AI: Forward to backend service
     AI-->>APIM: Response
-    APIM->>APIM: Log to Event Hub
+    APIM->>APIM: Logs & metrics
     APIM-->>App: Response with usage headers
 ```
 
@@ -118,6 +117,7 @@ This is a submodule focused on Citadel Access Contracts. The folder structure is
 ```
 citadel-access-contracts/
 ├── main.bicep                          # Main orchestration template
+├── main.bicepparam                     # Base parameter file
 ├── modules/
 │   ├── apimOnboardService.bicep        # Product + subscription creation
 │   ├── apimProduct.bicep               # APIM product module
@@ -125,27 +125,28 @@ citadel-access-contracts/
 │   └── kvSecrets.bicep                 # Key Vault secret storage
 ├── policies/
 │   └── default-ai-product-policy.xml   # Default product policy
+├── use-cases-contracts/                # Use-case contracs folder for source control 
+│   └── <your-use-case-folder>/         # Custom use case folders
+│       ├── <usecase.bicepparam>        # Use case specific parameters
+│       └── <policy.xml>                # Custom policy file
 └── samples/
     ├── healthcare-chatbot/             # Use case 1: Healthcare AI
-    │   ├── README.md                   # Complete documentation
-    │   ├── usecase.bicepparam          # Deployment parameters
-    │   └── policy.xml                  # Custom APIM policy
+    │   ├── usecase.bicepparam              # Deployment parameters
+    │   └── policy.xml                      # Custom APIM policy
     ├── customer-support-agent/         # Use case 2: Support AI
-    │   ├── README.md
     │   ├── usecase.bicepparam
     │   └── policy.xml
     └── document-analysis-pipeline/     # Use case 3: Document AI
-        ├── README.md
         ├── usecase.bicepparam
         ├── doc-policy.xml              # Document Intelligence policy
-        └── oai-policy.xml              # OpenAI policy
+        └── llm-policy.xml              # LLM policy
 ```
 
 ---
 
-## 🔧 Parameter Reference
+## 🔧 Parameter File Reference
 
-### Main Parameters (main.bicep)
+### Main Parameters (main.bicepparam)
 
 | Parameter | Type | Required | Description | Example |
 |-----------|------|----------|-------------|---------|
@@ -158,7 +159,7 @@ citadel-access-contracts/
 | `productTerms` | string | ❌ | Product terms of service | "By using this product..." |
 
 
-### Service Code mapping
+#### Service Code mapping
 
 Map service codes (which is a short acronym that represents the category of services fall under) to their API-id in APIM:
 
@@ -187,9 +188,7 @@ Mapping currently is suggested to focus on a specific category of services (e.g.
 
 You can create unique mappings that mix different service types under one bundle if needed (this will require the product policy to be aware of that mix to apply the correct policies based on the service type like using tokens-per-mint limits for LLM and request-per-min limits for Document Intelligence).
 
----
-
-### Use case service assignment schema
+#### Use-case service assignment schema
 
 Each service in the `services` array:
 
@@ -219,8 +218,8 @@ But each service will have its own product + subscription + secrets (i.e llm wil
 | Key Vault Secrets | KV | `endpointSecretName`, `apiKeySecretName` | One endpoint + one key per service |
 
 Naming examples
-- Product: `OAI-Retail-FinancialAssistant-DEV`
-- Subscription: `OAI-Retail-FinancialAssistant-DEV-SUB-01`
+- Product: `LLM-Retail-FinancialAssistant-DEV`
+- Subscription: `LLM-Retail-FinancialAssistant-DEV-SUB-01`
 
 ---
 
@@ -232,7 +231,6 @@ Naming examples
 |----------|-------------|---------------|
 | **Citadel Compliant APIM Instance** | with published APIs matching your `apiNameMapping` | `az apim api list -g <rg> -n <apim-name>` |
 | **Azure Key Vault** | Accessible with secret set permissions (if using KV) | `az keyvault show -n <kv-name>` |
-| **APIs in APIM** | APIs already exist with correct names | Check APIM portal → APIs |
 
 ### Permissions Required
 
@@ -340,12 +338,6 @@ az apim product list `
   --service-name YOUR-APIM-NAME `
   --query "[?contains(name, 'REPLACE-PRODUCT-NAME')].{Name:name, State:state}"
 
-# Check subscriptions
-az apim subscription list `
-  --resource-group YOUR-APIM-RG `
-  --service-name YOUR-APIM-NAME `
-  --query "[?contains(displayName, 'REPLACE-PRODUCT-NAME')]"
-
 # If using Key Vault, check secrets
 az keyvault secret list `
   --vault-name YOUR-KV-NAME `
@@ -377,75 +369,9 @@ Also you can use the [citadel-governance-hub-primary-tests](../../../validation/
 
 ---
 
-## 🎯 Complete Use Case Examples
+## 🔑 Secret Management Options
 
-### 1. Healthcare Patient Assistant 🏥
-
-**Scenario**: HIPAA-compliant chatbot for healthcare professionals
-
-**Services**: Azure OpenAI + Document Intelligence
-
-**Key Features**:
-- Model restrictions (GPT-4o, GPT-4.1 only)
-- Content safety and compliance logging of level 4
-- Medical document processing
-- Token limits: 50K/min per subscription
-
-```powershell
-# Quick deploy
-cd samples/healthcare-chatbot
-# Edit usecase.bicepparam first
-az deployment sub create --location eastus --template-file ../../main.bicep --parameters usecase.bicepparam
-```
-
----
-
-### 2. Customer Support Agent 🎧
-
-**Scenario**: Multi-tier AI support with knowledge base integration
-
-**Services**: Azure OpenAI + Azure AI Search
-
-**Key Features**:
-- Premium vs Standard tier rate limiting (300 vs 150 req/min)
-- RAG with Azure AI Search
-- Response caching (5 min TTL)
-- Token cost tracking per request
-- Support for GPT-4o-mini for cost optimization
-
-```powershell
-# Quick deploy
-cd samples/customer-support-agent
-# Edit usecase.bicepparam first
-az deployment sub create --location eastus --template-file ../../main.bicep --parameters usecase.bicepparam
-```
-
----
-
-### 3. Document Analysis Pipeline 📄
-
-**Scenario**: High-volume document processing with OCR and summarization
-
-**Services**: Document Intelligence + Azure OpenAI
-
-**Key Features**:
-- Batch processing (500 docs/min)
-- Async long-running operations (120s timeout)
-- Automatic retry logic (3 attempts)
-- Per-request cost estimation
-- Multi-model routing (GPT-4o, GPT-4o-mini, GPT-4-turbo)
-- Separate policies for each service
-
-```powershell
-# Quick deploy
-cd samples/document-analysis-pipeline
-# Edit usecase.bicepparam first
-az deployment sub create --location eastus --template-file ../../main.bicep --parameters usecase.bicepparam
-```
-
----
-
-## 🔑 Key Vault Integration Options
+Access contract generates sensitive keys for each service onboarded. You have two options to manage these secrets:
 
 ### Option 1: Use Key Vault (Recommended)
 
@@ -521,9 +447,9 @@ The simplest approach - omit `policyXml` or set it to empty string:
 ```bicep
 param services = [
   {
-    code: 'OAI'
-    endpointSecretName: 'OAI-ENDPOINT'
-    apiKeySecretName: 'OAI-KEY'
+    code: 'LLM'
+    endpointSecretName: 'LLM-ENDPOINT'
+    apiKeySecretName: 'LLM-KEY'
     policyXml: ''  // Uses policies/default-ai-product-policy.xml
   }
 ]
