@@ -104,12 +104,18 @@
                         </set-header>
                         <set-body>@{
                             string requestedModel = (string)context.Variables["requestedModel"];
-                            JObject modelMappings = (JObject)context.Variables["modelMappings"];
+                            JArray backendPools = (JArray)context.Variables["backendPools"];
                             JArray supportedModels = new JArray();
                             
-                            foreach (var kvp in modelMappings)
+                            foreach (JObject pool in backendPools)
                             {
-                                supportedModels.Add(kvp.Key);
+                                foreach (var model in (JArray)pool["supportedModels"])
+                                {
+                                    if (!supportedModels.Contains(model))
+                                    {
+                                        supportedModels.Add(model);
+                                    }
+                                }
                             }
                             
                             return new JObject(

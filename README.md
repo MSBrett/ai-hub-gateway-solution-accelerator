@@ -180,7 +180,7 @@ Describes the tools and agents a spoke exposes back to the hub:
 - ✅ Reduced manual effort in governance onboarding
 - ✅ Continuous policy compliance verification
 
-> 🔗 **Learn More:** [AI Citadel Access Contracts Guide](./guides/citadel-access-contracts.md)
+> 🔗 **Learn More:** [AI Citadel Access Contracts Guide](./bicep/infra/citadel-access-contracts/README.md)
 
 ---
 
@@ -258,14 +258,14 @@ Master AI Citadel Governance Hub implementation and operations with our detailed
 
 | Guide | Description |
 |-------|-------------|
-| [**🆕 LLM Backend Onboarding Guide**](./guides/LLM-Backend-Onboarding-Guide.md) | Independent LLM backend routing deployment with load balancing and failover |
+| [**🆕 LLM Backend Onboarding Guide**](./bicep/infra/llm-backend-onboarding/README.md) | Independent LLM backend routing deployment with load balancing and failover |
 
 ### 🔧 **Use-case Onboarding**
 
 | Guide | Description |
 |-------|-------------|
-| [**🆕 AI Citadel Access Contracts Guide**](./guides/Citadel-Access-Contracts.md) | Guide on integrating new/existing AI apps & agents with AI Citadel Governance Hub |
-| [**🆕 AI Citadel Access Contracts Policies**](./guides/citadel-access-contracts-policy.md) | Deep dive into policy configurations for AI Citadel Access Contracts |
+| [**🆕 AI Citadel Access Contracts Guide**](./bicep/infra/citadel-access-contracts/README.md) | Guide on integrating new/existing AI apps & agents with AI Citadel Governance Hub |
+| [**🆕 AI Citadel Access Contracts Policies**](./bicep/infra/citadel-access-contracts/citadel-access-contracts-policy.md) | Deep dive into policy configurations for AI Citadel Access Contracts |
 
 
 ### 🛡️ **Security & Compliance**
