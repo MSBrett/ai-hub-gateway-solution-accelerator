@@ -19,61 +19,54 @@
         
         return modelDeployments.ToString();
     }" />
-    <return-response>
-        <set-status code="200" reason="OK" />
-        <set-header name="Content-Type" exists-action="override">
-            <value>application/json</value>
-        </set-header>
-        <set-body>@{
-            JObject response = new JObject();
-            JArray allModels = JArray.Parse((string)context.Variables["availableModels"]);
+    <set-variable name="availableFilteredModels" value="@{
+        JArray allModels = JArray.Parse((string)context.Variables["availableModels"]);
+        
+        // Get unique models by name (case-insensitive)
+        var seenNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        JArray uniqueModels = new JArray();
+        foreach (var model in allModels)
+        {
+            string modelName = model["name"]?.ToString() ?? "";
+            if (!seenNames.Contains(modelName))
+            {
+                seenNames.Add(modelName);
+                uniqueModels.Add(model);
+            }
+        }
+        
+        // Get allowedModels filter (comma-separated string)
+        string allowedModelsStr = context.Variables.ContainsKey("allowedModels") 
+            ? (string)context.Variables["allowedModels"] 
+            : "";
+        
+        JArray filteredModels;
+        if (string.IsNullOrWhiteSpace(allowedModelsStr))
+        {
+            // No filter - return all unique models
+            filteredModels = uniqueModels;
+        }
+        else
+        {
+            // Parse allowed models and filter (case-insensitive)
+            var allowedSet = new HashSet<string>(
+                allowedModelsStr.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                                .Select(m => m.Trim()),
+                StringComparer.OrdinalIgnoreCase
+            );
             
-            // Get unique models by name (case-insensitive)
-            var seenNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            JArray uniqueModels = new JArray();
-            foreach (var model in allModels)
+            filteredModels = new JArray();
+            foreach (var model in uniqueModels)
             {
                 string modelName = model["name"]?.ToString() ?? "";
-                if (!seenNames.Contains(modelName))
+                if (allowedSet.Contains(modelName))
                 {
-                    seenNames.Add(modelName);
-                    uniqueModels.Add(model);
+                    filteredModels.Add(model);
                 }
             }
-            
-            // Get allowedModels filter (comma-separated string)
-            string allowedModelsStr = context.Variables.ContainsKey("allowedModels") 
-                ? (string)context.Variables["allowedModels"] 
-                : "";
-            
-            JArray filteredModels;
-            if (string.IsNullOrWhiteSpace(allowedModelsStr))
-            {
-                // No filter - return all unique models
-                filteredModels = uniqueModels;
-            }
-            else
-            {
-                // Parse allowed models and filter (case-insensitive)
-                var allowedSet = new HashSet<string>(
-                    allowedModelsStr.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
-                                    .Select(m => m.Trim()),
-                    StringComparer.OrdinalIgnoreCase
-                );
-                
-                filteredModels = new JArray();
-                foreach (var model in uniqueModels)
-                {
-                    string modelName = model["name"]?.ToString() ?? "";
-                    if (allowedSet.Contains(modelName))
-                    {
-                        filteredModels.Add(model);
-                    }
-                }
-            }
-            
-            response["value"] = filteredModels;
-            return response.ToString();
-        }</set-body>
-    </return-response>
+        }
+        
+        return filteredModels.ToString();
+    }" />
+    
 </fragment>
