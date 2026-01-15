@@ -10,20 +10,27 @@
         <base />
         <!-- Extract and validate model parameter from request -->
         <include-fragment fragment-id="set-llm-requested-model" />
+        
+        <!-- Setting allowed models variable (comma-separated list) -->
+        <set-variable name="allowedModels" value="gpt-4o,deepseek-r1" />
+        
         <!-- Restrict access for this product to specific models -->
         <choose>
             <when condition="@{
-                var allowedModels = new string[] { "gpt-4o", "deepseek-r1" };
+                var allowedModelsVar = context.Variables.GetValueOrDefault<string>("allowedModels") ?? string.Empty;
+                var allowedModels = allowedModelsVar.Split(',').Select(m => m.Trim().ToLowerInvariant()).ToArray();
                 var requestedModel = (context.Variables.GetValueOrDefault<string>("requestedModel") ?? string.Empty).ToLowerInvariant();
-                return !allowedModels.Any(m => m.ToLowerInvariant() == requestedModel);
+                return !allowedModels.Any(m => m == requestedModel);
             }">
                 <return-response>
                     <set-status code="401" reason="Unauthorized model access" />
                 </return-response>
             </when>
         </choose>
+
         <!-- Capacity management - Subscription Level: allow only assigned tpm for each HR use case subscription -->
         <llm-token-limit counter-key="@(context.Subscription.Id)" tokens-per-minute="300" estimate-prompt-tokens="false" tokens-consumed-header-name="consumed-tokens" remaining-tokens-header-name="remaining-tokens" token-quota="100000" token-quota-period="Monthly" retry-after-header-name="retry-after" />
+        
         <!-- Failure to pass content safety will result in 403 error -->
         <llm-content-safety backend-id="content-safety-backend" shield-prompt="true">
             <!-- 0 is most restrictive and can be set up-to 7 -->

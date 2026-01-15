@@ -12,12 +12,16 @@ The following policy snippets can be applied as needed for the product policy ac
 <inbound>
     <!-- Extract and validate model parameter from request -->
     <include-fragment fragment-id="set-llm-requested-model" />
+
+    <!-- Setting allowed models variable (comma-separated list) -->
+    <set-variable name="allowedModels" value="gpt-4o,deepseek-r1" />
     <!-- Restrict access for this product to specific models -->
     <choose>
         <when condition="@{
-            var allowedModels = new string[] { "gpt-4o", "deepseek-r1" };
+            var allowedModelsVar = context.Variables.GetValueOrDefault<string>("allowedModels") ?? string.Empty;
+            var allowedModels = allowedModelsVar.Split(',').Select(m => m.Trim().ToLowerInvariant()).ToArray();
             var requestedModel = (context.Variables.GetValueOrDefault<string>("requestedModel") ?? string.Empty).ToLowerInvariant();
-            return !allowedModels.Any(m => m.ToLowerInvariant() == requestedModel);
+            return !allowedModels.Any(m => m == requestedModel);
         }">
             <return-response>
                 <set-status code="401" reason="Unauthorized model access" />
