@@ -454,6 +454,11 @@ resource universalLlmDeploymentOperation 'Microsoft.ApiManagement/service/apis/o
   parent: universalLLMApi
 }
 
+resource universalLlmDeploymentByNameOperation 'Microsoft.ApiManagement/service/apis/operations@2022-08-01' existing = {
+  name: 'deployment-by-name'
+  parent: universalLLMApi
+}
+
 resource openAIApi 'Microsoft.ApiManagement/service/apis@2022-08-01' existing = {
   name: 'azure-openai-api'
   parent: apimService
@@ -467,6 +472,11 @@ resource openAIDeploymentOperation 'Microsoft.ApiManagement/service/apis/operati
   parent: openAIApi
 }
 
+resource openAIDeploymentByNameOperation 'Microsoft.ApiManagement/service/apis/operations@2022-08-01' existing = {
+  name: 'deployment-by-name'
+  parent: openAIApi
+}
+
 resource universalLlmDeploymentOperationPolicy 'Microsoft.ApiManagement/service/apis/operations/policies@2022-08-01' = {
   name: 'policy'
   parent: universalLlmDeploymentOperation
@@ -476,12 +486,30 @@ resource universalLlmDeploymentOperationPolicy 'Microsoft.ApiManagement/service/
   }
 }
 
+resource universalLlmDeploymentByNameOperationPolicy 'Microsoft.ApiManagement/service/apis/operations/policies@2022-08-01' = {
+  name: 'policy'
+  parent: universalLlmDeploymentByNameOperation
+  properties: {
+    format: 'rawxml'
+    value: loadTextContent('./policies/universal-llm-api-deployment-by-name-policy.xml')
+  }
+}
+
 resource openAIDeploymentOperationPolicy 'Microsoft.ApiManagement/service/apis/operations/policies@2022-08-01' = {
   name: 'policy'
   parent: openAIDeploymentOperation
   properties: {
     format: 'rawxml'
     value: loadTextContent('./policies/universal-llm-api-deployments-policy.xml')
+  }
+}
+
+resource openAIDeploymentByNameOperationPolicy 'Microsoft.ApiManagement/service/apis/operations/policies@2022-08-01' = {
+  name: 'policy'
+  parent: openAIDeploymentByNameOperation
+  properties: {
+    format: 'rawxml'
+    value: loadTextContent('./policies/universal-llm-api-deployment-by-name-policy.xml')
   }
 }
 

@@ -71,6 +71,27 @@
         "summary": "Deployments"
       }
     },
+    "/deployment/{deployment-id}": {
+        "get": {
+            "summary": "Deployment by Name",
+            "operationId": "deployment-by-name",
+            "description": "Get deployment details by deployment name for LLM resource for Microsoft Foundry Integration",
+            "parameters": [{
+                "name": "deployment-id",
+                "in": "path",
+                "required": true,
+                "schema": {
+                    "enum": [""],
+                    "type": ""
+                }
+            }],
+            "responses": {
+                "200": {
+                    "description": ""
+                }
+            }
+        }
+    },
     "/deployments/{deployment-id}/completions": {
       "post": {
         "description": "Creates a completion for the provided prompt, parameters and chosen model.",
