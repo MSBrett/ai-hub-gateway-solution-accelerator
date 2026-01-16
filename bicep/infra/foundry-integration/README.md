@@ -104,23 +104,22 @@ Copy and edit the default parameter file:
 
 ```bash
 cd bicep/infra/foundry-integration
-cp main.bicepparam my-connection.bicepparam
+cp main.bicepparam hr-agent-citadel-hub-connection.bicepparam
 ```
 
-Edit `my-connection.bicepparam`:
+Edit `hr-agent-citadel-hub-connection.bicepparam`:
 
 ```bicep
 using 'main.bicep'
 
 param aiFoundryAccountName = 'my-foundry-account'
 param aiFoundryProjectName = 'my-project'
-param connectionName = 'citadel-hub-connection'
+param connectionName = 'hr-agent-citadel-hub-connection'
 param apimGatewayUrl = 'https://my-apim.azure-api.net'
-param apiPath = 'openai'
+param apiPath = 'models'
 param apimSubscriptionKey = 'your-subscription-key'
-param deploymentInPath = 'true'
+param deploymentInPath = 'false'
 param inferenceAPIVersion = '2024-02-01'
-// Leave staticModels empty to use APIM defaults
 ```
 
 ### Step 2: Deploy
@@ -156,6 +155,8 @@ Choose **one** of these approaches:
 | **Custom Discovery** | Non-standard endpoints or OpenAI format | `listModelsEndpoint`, `getModelEndpoint`, `deploymentProvider` |
 
 #### Option 1: APIM Defaults (Recommended)
+
+APIM provisioned by Citadel Governance Hub supports dynamic model discovery out-of-the-box and it is the recommended approach.
 
 Uses APIM's standard discovery endpoints:
 - List: `/deployments`
@@ -220,26 +221,6 @@ param customHeaders = {
 }
 ```
 
-### Custom Authentication
-
-Customize the API key header format:
-
-```bicep
-// Standard APIM subscription header
-param authConfig = {
-  type: 'api_key'
-  name: 'Ocp-Apim-Subscription-Key'
-  format: '{api_key}'
-}
-
-// Bearer token format
-param authConfig = {
-  type: 'api_key'
-  name: 'Authorization'
-  format: 'Bearer {api_key}'
-}
-```
-
 ---
 
 ## 📋 Parameter Reference
@@ -280,33 +261,8 @@ param authConfig = {
 az deployment group create \
   --resource-group <rg> \
   --template-file main.bicep \
-  --parameters main.bicepparam
+  --parameters hr-agent-citadel-hub-connection.bicepparam
 ```
-
-### With Static Models
-```bash
-az deployment group create \
-  --resource-group <rg> \
-  --template-file main.bicep \
-  --parameters samples/static-models.bicepparam
-```
-
-### With Custom Headers
-```bash
-az deployment group create \
-  --resource-group <rg> \
-  --template-file main.bicep \
-  --parameters samples/custom-headers.bicepparam
-```
-
-### With Custom Authentication
-```bash
-az deployment group create \
-  --resource-group <rg> \
-  --template-file main.bicep \
-  --parameters samples/custom-auth.bicepparam
-```
-
 ---
 
 ## 🧪 Using the Connection in Agents
@@ -319,7 +275,7 @@ from azure.ai.projects import AIProjectClient
 from azure.identity import DefaultAzureCredential
 
 # Configure model deployment name as: {connection-name}/{model-name}
-model_deployment = "citadel-hub-connection/gpt-4o"
+model_deployment = "hr-agent-citadel-hub-connection/gpt-4o"
 os.environ["AZURE_AI_MODEL_DEPLOYMENT_NAME"] = model_deployment
 
 # Create agent client
@@ -337,40 +293,6 @@ agent = client.agents.create_agent(
 ```
 
 ---
-
-## 🔍 Troubleshooting
-
-### Connection Not Appearing
-
-1. Verify you're in the correct subscription:
-   ```bash
-   az account show
-   ```
-
-2. Check deployment succeeded:
-   ```bash
-   az deployment group show \
-     --resource-group <rg> \
-     --name <deployment-name>
-   ```
-
-### Authentication Errors
-
-1. Verify APIM subscription key is valid
-2. Check APIM subscription has access to the API
-3. Verify `authConfig` matches APIM expectations
-
-### Model Discovery Failing
-
-1. If using custom discovery, verify endpoints are correct
-2. Check `deploymentProvider` matches your API response format
-3. Try using static models instead
-
-### Agent Can't Access Models
-
-1. Verify connection is shared (`isSharedToAll = true`) or user has access
-2. Check model deployment name format: `{connection-name}/{model-name}`
-3. Verify APIM policies allow the request
 
 ---
 
@@ -390,6 +312,6 @@ agent = client.agents.create_agent(
 | **Preview Status** | Feature is in preview with potential breaking changes |
 | **UI Support** | Requires Azure CLI for connection management |
 | **Agent Support** | Supports Prompt Agents in the Agent SDK |
-| **APIM Tiers** | Only Standard v2 and Premium tiers supported |
-| **Auth Types** | Only ApiKey authentication currently (AAD coming soon) |
+| **APIM Tiers** | Only Standard v2 and Premium tiers supported if network isolation is required |
+| **Auth Types** | Only ApiKey authentication currently (Entra ID coming soon) |
 

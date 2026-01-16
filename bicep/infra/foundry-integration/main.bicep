@@ -71,7 +71,7 @@ param isSharedToAll bool = false
 
 @allowed(['true', 'false'])
 @description('Whether deployment name is in URL path (true) or request body (false). REQUIRED.')
-param deploymentInPath string = 'true'
+param deploymentInPath string = 'false'
 
 @description('API version for inference calls (chat completions, embeddings). Leave empty for APIM defaults.')
 param inferenceAPIVersion string = ''
@@ -111,14 +111,14 @@ Example staticModels format:
 
 // OPTION 2: Dynamic Discovery Configuration
 @description('Endpoint for listing models (e.g., /deployments, /models). Required for custom dynamic discovery.')
-param listModelsEndpoint string = ''
+param listModelsEndpoint string = '/deployments'
 
 @description('Endpoint for getting model details (e.g., /deployments/{deploymentName}). Required for custom dynamic discovery.')
-param getModelEndpoint string = ''
+param getModelEndpoint string = '/deployments/{deployment-id}'
 
 @allowed(['', 'AzureOpenAI', 'OpenAI'])
 @description('Provider format for model discovery responses')
-param deploymentProvider string = ''
+param deploymentProvider string = 'AzureOpenAI'
 
 // ============================================================================
 // OPTIONAL: CUSTOM HEADERS

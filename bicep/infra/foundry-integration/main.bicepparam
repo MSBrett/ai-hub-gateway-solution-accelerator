@@ -35,7 +35,7 @@ param connectionName = 'citadel-hub-connection'
 // REQUIRED: APIM Gateway Configuration
 // ============================================================================
 param apimGatewayUrl = 'https://YOUR-APIM-NAME.azure-api.net'
-param apiPath = 'models'  // e.g., 'openai', 'azure-openai-service-api'
+param apiPath = 'models'  // e.g., 'openai', 'models' are supported by default
 
 // ============================================================================
 // REQUIRED: Authentication
@@ -47,6 +47,11 @@ param apimSubscriptionKey = 'YOUR-APIM-SUBSCRIPTION-KEY'  // Use Key Vault refer
 // ============================================================================
 param deploymentInPath = 'false'
 param inferenceAPIVersion = '2024-02-01'
+
+// ============================================================================
+// OPTIONAL: Configurations
+// ============================================================================
+param customHeaders = {}
 
 // Using APIM defaults - no static models or custom discovery parameters provided
 // APIM will automatically use /deployments endpoints for model discovery
