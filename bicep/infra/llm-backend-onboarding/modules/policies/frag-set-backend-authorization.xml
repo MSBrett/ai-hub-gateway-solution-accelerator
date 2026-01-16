@@ -19,6 +19,10 @@
     
     <!-- Configure authentication and URL rewriting based on backend pool type -->
     <choose>
+        <when condition="@(((string)context.Variables["targetPoolType"]) == "non-llm-request")">
+            <!-- Non-LLM request (e.g., GET operations like listing models) -->
+            <!-- Skip authentication and URL rewriting - request will be handled by operation-specific policy -->
+        </when>
         <when condition="@(((string)context.Variables["targetPoolType"]) == "azure-openai")">
             <!-- Azure OpenAI: Use managed identity authentication with Cognitive Services resource -->
             <authentication-managed-identity resource="https://cognitiveservices.azure.com" output-token-variable-name="msi-access-token" client-id="{{uami-client-id}}" ignore-error="false" />
@@ -62,6 +66,10 @@
         </otherwise>
     </choose>
     
-    <!-- Route request to the selected backend pool -->
-    <set-backend-service backend-id="@((string)context.Variables["targetBackendPool"])" />
+    <!-- Route request to the selected backend pool (skip for non-LLM requests) -->
+    <choose>
+        <when condition="@((string)context.Variables["targetBackendPool"] != "non-llm-request")">
+            <set-backend-service backend-id="@((string)context.Variables["targetBackendPool"])" />
+        </when>
+    </choose>
 </fragment>

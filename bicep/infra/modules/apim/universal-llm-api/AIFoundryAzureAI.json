@@ -21,7 +21,7 @@
     "/deployments": {
       "get": {
         "operationId": "deployments",
-        "description": "Get deployments for Azure OpenAI resource for AI Foundry Integration",
+        "description": "Get deployments for Azure OpenAI resource for Microsoft Foundry Integration",
         "parameters": [
         ],
         "responses": {
@@ -65,6 +65,27 @@
         },
         "summary": "Deployments"
       }
+    },
+    "/deployments/{deployment-id}": {
+        "get": {
+            "summary": "Get deployment by name",
+            "operationId": "deployment-by-name",
+            "description": "Get deployment details by deployment name for LLM resource for Microsoft Foundry Integration",
+            "parameters": [{
+                "name": "deployment-id",
+                "in": "path",
+                "required": true,
+                "schema": {
+                    "enum": [""],
+                    "type": ""
+                }
+            }],
+            "responses": {
+                "200": {
+                    "description": ""
+                }
+            }
+        }
     },
     "/chat/completions": {
       "post": {

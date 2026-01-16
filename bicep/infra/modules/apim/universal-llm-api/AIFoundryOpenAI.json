@@ -68,8 +68,29 @@
             }
           }
         },
-        "summary": "Deployments"
+        "summary": "Get deployments"
       }
+    },
+    "/deployments/{deployment-id}": {
+        "get": {
+            "summary": "Get deployment by name",
+            "operationId": "deployment-by-name",
+            "description": "Get deployment details by deployment name for LLM resource for Microsoft Foundry Integration",
+            "parameters": [{
+                "name": "deployment-id",
+                "in": "path",
+                "required": true,
+                "schema": {
+                    "enum": [""],
+                    "type": ""
+                }
+            }],
+            "responses": {
+                "200": {
+                    "description": ""
+                }
+            }
+        }
     },
     "/deployments/{deployment-id}/completions": {
       "post": {

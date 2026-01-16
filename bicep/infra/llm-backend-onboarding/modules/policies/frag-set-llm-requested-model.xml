@@ -19,6 +19,13 @@
     <set-variable name="requestedModel" value="@{
         try
         {
+            // Check if this is a GET request (non-LLM endpoints like listing models)
+            // GET requests typically don't have a body and don't require model routing
+            if (context.Request.Method.Equals("GET", StringComparison.OrdinalIgnoreCase))
+            {
+                return "non-llm-request";
+            }
+            
             // First try to get model from deployment-id path parameter (Azure OpenAI pattern)
             var deploymentId = context.Request.MatchedParameters.ContainsKey("deployment-id") 
                 ? context.Request.MatchedParameters["deployment-id"] 
@@ -45,8 +52,11 @@
         }
     }" />
     
-    <!-- Validate that model parameter is present -->
+    <!-- Validate that model parameter is present (skip for non-LLM requests like GET operations) -->
     <choose>
+        <when condition="@((string)context.Variables["requestedModel"] == "non-llm-request")">
+            <!-- Non-LLM request (e.g., GET operations like listing models) - skip model validation -->
+        </when>
         <when condition="@(string.IsNullOrEmpty((string)context.Variables["requestedModel"]))">
             <!-- If requested model is not identified, return 400 error -->
             <return-response>

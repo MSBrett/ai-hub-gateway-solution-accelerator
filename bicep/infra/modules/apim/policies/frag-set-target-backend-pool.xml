@@ -17,6 +17,13 @@
     <!-- Determine target backend pool based on requested model and RBAC permissions -->
     <set-variable name="targetBackendPool" value="@{
         string requestedModel = (string)context.Variables["requestedModel"];
+        
+        // Skip backend pool routing for non-LLM requests (e.g., GET operations like listing models)
+        if (requestedModel == "non-llm-request")
+        {
+            return "non-llm-request";
+        }
+        
         string defaultBackendPool = (string)context.Variables["defaultBackendPool"];
         string allowedBackendPools = (string)context.Variables["allowedBackendPools"];
         JArray backendPools = (JArray)context.Variables["backendPools"];
@@ -77,6 +84,9 @@
 
     <!-- Validate target backend pool and return appropriate error response if needed -->
     <choose>
+        <when condition="@((string)context.Variables["targetBackendPool"] == "non-llm-request")">
+            <!-- Non-LLM request - skip backend pool validation and routing -->
+        </when>
         <when condition="@(((string)context.Variables["targetBackendPool"]).StartsWith("ERROR_"))">
             <choose>
                 <when condition="@(((string)context.Variables["targetBackendPool"]) == "ERROR_NO_MODEL")">
@@ -158,6 +168,13 @@
     <!-- Set poolType variable based on the target backend pool -->
     <set-variable name="targetPoolType" value="@{
         string targetBackendPool = (string)context.Variables["targetBackendPool"];
+        
+        // Skip for non-LLM requests
+        if (targetBackendPool == "non-llm-request")
+        {
+            return "non-llm-request";
+        }
+        
         JArray backendPools = (JArray)context.Variables["backendPools"];
 
         foreach (JObject pool in backendPools)
