@@ -68,12 +68,12 @@
             }
           }
         },
-        "summary": "Deployments"
+        "summary": "Get deployments"
       }
     },
-    "/deployment/{deployment-id}": {
+    "/deployments/{deployment-id}": {
         "get": {
-            "summary": "Deployment by Name",
+            "summary": "Get deployment by name",
             "operationId": "deployment-by-name",
             "description": "Get deployment details by deployment name for LLM resource for Microsoft Foundry Integration",
             "parameters": [{

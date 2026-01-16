@@ -45,7 +45,7 @@ param apimSubscriptionKey = 'YOUR-APIM-SUBSCRIPTION-KEY'  // Use Key Vault refer
 // ============================================================================
 // APIM Configuration
 // ============================================================================
-param deploymentInPath = 'true'
+param deploymentInPath = 'false'
 param inferenceAPIVersion = '2024-02-01'
 
 // Using APIM defaults - no static models or custom discovery parameters provided

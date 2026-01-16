@@ -131,7 +131,7 @@ az login
 az account set --subscription <foundry-subscription-id>
 
 # Deploy the connection
-az deployment group create --name foundry-integration --resource-group rg-ai-hub-citadel-dev-19 --template-file main.bicep --parameters main-local.bicepparam
+az deployment group create --name foundry-integration --resource-group <foundry-resource-group> --template-file main.bicep --parameters main-local.bicepparam
 ```
 
 ### Step 3: Verify
@@ -159,14 +159,14 @@ Choose **one** of these approaches:
 
 Uses APIM's standard discovery endpoints:
 - List: `/deployments`
-- Get: `/deployments/{deploymentName}`
+- Get: `/deployment/{deploymentName}`
 - Provider: `AzureOpenAI`
 
 Simply don't provide `staticModels` or custom discovery parameters:
 
 ```bicep
 // No staticModels or discovery params = APIM defaults
-param deploymentInPath = 'true'
+param deploymentInPath = 'false'
 param inferenceAPIVersion = '2024-02-01'
 ```
 
