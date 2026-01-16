@@ -85,17 +85,19 @@ The `set-llm-requested-model` policy fragment extracts the model from the reques
 
 | Source | Pattern | Example |
 |--------|---------|---------|
+| **GET Request** | Any GET operation | Returns `"non-llm-request"` (skips model extraction) |
 | **Request Body** | `{"model": "gpt-4o", ...}` | Universal LLM API |
 | **URL Path** | `/deployments/{deployment-id}/...` | Azure OpenAI API |
 
 Purpose: Extracts the requested model from either Azure OpenAI endpoint or inference endpoint
 
 **Supported Patterns:**
-1. Azure OpenAI: Model from deployment-id path parameter (/deployments/{deployment-id}/chat/completions)
-2. Inference Endpoint: Model from request body JSON ({"model": "model-name", ...})
+1. **GET Requests**: Returns `"non-llm-request"` to skip model-based routing (used for operations like listing available models)
+2. Azure OpenAI: Model from deployment-id path parameter (/deployments/{deployment-id}/chat/completions)
+3. Inference Endpoint: Model from request body JSON ({"model": "model-name", ...})
 
 **Output Variable:**
-- requestedModel: The extracted model name (empty string if not found)
+- requestedModel: The extracted model name, `"non-llm-request"` for GET operations, or empty string if not found
 
 Logic:
 - First attempts to extract from deployment-id path parameter (Azure OpenAI pattern)
@@ -152,16 +154,17 @@ The `set-target-backend-pool` fragment matches the requested model to a backend:
 
 **Purpose:**
 - Determines which backend pool to route the request to based on the requested model and access permissions
+- For non-LLM requests (GET operations), skips backend pool routing entirely
         
 **Expected Input Variables:**
-- requestedModel: The model name extracted from the request payload
+- requestedModel: The model name extracted from the request payload (or `"non-llm-request"` for GET operations)
 - defaultBackendPool: Default backend pool to use when model is not mapped (default behavior empty string = error for unmapped models)
 - allowedBackendPools: Comma-separated list of allowed backend pool IDs (empty string = all pools allowed) - This is usually set at APIM product level to restrict access to certain backend pools per use case
 - backendPools: JArray containing all backend pool configurations
 
 **Output Variables:**
-- targetBackendPool: The selected backend pool name or error code (ERROR_NO_MODEL, ERROR_NO_ALLOWED_POOLS)
-- targetPoolType: The type of the selected backend pool (e.g., "azure-openai", "ai-foundry")
+- targetBackendPool: The selected backend pool name, `"non-llm-request"` for GET operations, or error code (ERROR_NO_MODEL, ERROR_NO_ALLOWED_POOLS)
+- targetPoolType: The type of the selected backend pool (e.g., "azure-openai", "ai-foundry", "non-llm-request")
 
 ### Step 4: Authentication & Routing
 
@@ -170,7 +173,7 @@ The `set-backend-authorization` fragment configures backend-specific authenticat
 **Purpose:** Configures authentication headers and URL rewriting based on backend pool type
 
 **Expected Input Variables:**
-- targetPoolType: The type of the target backend pool (e.g., "azure-openai", "ai-foundry")
+- targetPoolType: The type of the target backend pool (e.g., "azure-openai", "ai-foundry", "non-llm-request")
 - targetBackendPool: The selected backend pool name
 - requestedModel: The model name extracted from the request payload
 
@@ -181,11 +184,13 @@ The `set-backend-authorization` fragment configures backend-specific authenticat
 - Sets Authorization header with managed identity token
 - Rewrites request URL for Azure OpenAI to include deployment path
 - Sets backend service to the target backend pool
+- For `non-llm-request`: Skips authentication and backend routing (handled by operation-specific policy)
 
 It is worth noting there is default implementations for Azure LLMs, but this can be extended to support external LLM providers with different authentication schemes (API keys, tokens,...).
 
 | Backend Type | Authentication | URL Rewriting |
 |--------------|----------------|---------------|
+| `non-llm-request` | Skipped (operation-specific) | None |
 | `ai-foundry` | APIM's Managed Identity → Cognitive Services | None |
 | `azure-openai` | APIM's Managed Identity → Cognitive Services | Injects `/deployments/{model}/` |
 | `external` | Backend credentials | None |
@@ -258,9 +263,20 @@ Access contracts (applied at a product level) can restrict which backend pools a
 
 | Scenario | Behavior |
 |----------|----------|
+| `requestedModel = "non-llm-request"` | Access control bypassed (GET operations) |
 | `allowedBackendPools = ""` | All pools accessible |
 | `allowedBackendPools = "pool1,pool2"` | Only listed pools accessible |
 | Model supported but pool blocked | 403 Forbidden |
+
+### Non-LLM Request Handling
+
+GET operations (like listing available models) are identified as `"non-llm-request"` and bypass:
+- Model validation
+- Backend pool routing
+- Token usage metrics collection
+- Model-based access control
+
+This allows auxiliary endpoints to function without requiring a model parameter in the request.
 
 ## Usage Metrics Collection
 

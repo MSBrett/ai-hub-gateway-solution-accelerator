@@ -169,6 +169,20 @@ resource getAvailableModelsFragment 'Microsoft.ApiManagement/service/policyFragm
   }
 }
 
+/**
+ * Policy Fragment: Validate Model Access
+ * Restricts access to specific models based on the allowedModels variable
+ */
+resource validateModelAccessFragment 'Microsoft.ApiManagement/service/policyFragments@2024-06-01-preview' = {
+  parent: apimService
+  name: 'validate-model-access'
+  properties: {
+    description: 'Validates that the requested model is in the allowed models list for the product'
+    value: loadTextContent('./policies/frag-validate-model-access.xml')
+    format: 'rawxml'
+  }
+}
+
 // ------------------
 //    OUTPUTS
 // ------------------
@@ -184,6 +198,9 @@ output setTargetBackendPoolFragmentName string = setTargetBackendPoolPolicyFragm
 
 @description('Name of the get-available-models fragment')
 output getAvailableModelsFragmentName string = getAvailableModelsFragment.name
+
+@description('Name of the validate-model-access fragment')
+output validateModelAccessFragmentName string = validateModelAccessFragment.name
 
 @description('Generated backend pools configuration code')
 output backendPoolsCode string = backendPoolsCode

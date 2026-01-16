@@ -8,6 +8,10 @@ The following policy snippets can be applied as needed for the product policy ac
 
 ### Model Access Control Policy
 
+The model access control policy restricts which LLM models a product can access. This is implemented using the `validate-model-access` policy fragment.
+
+**Basic Usage:**
+
 ```xml
 <inbound>
     <!-- Extract and validate model parameter from request -->
@@ -15,21 +19,46 @@ The following policy snippets can be applied as needed for the product policy ac
 
     <!-- Setting allowed models variable (comma-separated list) -->
     <set-variable name="allowedModels" value="gpt-4o,deepseek-r1" />
-    <!-- Restrict access for this product to specific models -->
-    <choose>
-        <when condition="@{
-            var allowedModelsVar = context.Variables.GetValueOrDefault<string>("allowedModels") ?? string.Empty;
-            var allowedModels = allowedModelsVar.Split(',').Select(m => m.Trim().ToLowerInvariant()).ToArray();
-            var requestedModel = (context.Variables.GetValueOrDefault<string>("requestedModel") ?? string.Empty).ToLowerInvariant();
-            return !allowedModels.Any(m => m == requestedModel);
-        }">
-            <return-response>
-                <set-status code="401" reason="Unauthorized model access" />
-            </return-response>
-        </when>
-    </choose>
+    
+    <!-- Validate model access based on allowedModels -->
+    <include-fragment fragment-id="validate-model-access" />
 </inbound>
 ```
+
+**How It Works:**
+
+1. The `set-llm-requested-model` fragment extracts the model from the request:
+   - From request body `{"model": "gpt-4o", ...}` for Universal LLM API
+   - From URL path `/deployments/{deployment-id}/...` for Azure OpenAI API
+   - Returns `"non-llm-request"` for GET operations (like listing available models)
+
+2. The `validate-model-access` fragment validates the requested model:
+   - **Non-LLM requests** (GET operations): Usually reference meta data endpoints that discover allowed models
+   - **Empty `allowedModels`**: All models are allowed
+   - **Model not in list**: Returns 401 Unauthorized with structured JSON error
+
+**Error Response Format:**
+
+When access is denied, the policy returns a structured JSON error:
+
+```json
+{
+    "error": {
+        "message": "Access to model 'gpt-4' is not allowed for this product.",
+        "type": "access_error",
+        "code": "unauthorized_model_access",
+        "allowed_models": "gpt-4o,deepseek-r1"
+    }
+}
+```
+
+**Configuration Options:**
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `allowedModels` | Comma-separated list of allowed model names | `"gpt-4o,deepseek-r1,Phi-4"` |
+
+>**NOTE:** Non-LLM requests (such as GET operations for listing available models) are automatically allowed and do not require model validation. This ensures auxiliary endpoints function without needing a model parameter.
 ### Model Capacity Management Policy
 
 The below policy snippet, enforces a token limit per subscription but for all models being access via this product.

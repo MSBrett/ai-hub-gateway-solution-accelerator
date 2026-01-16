@@ -14,19 +14,8 @@
         <!-- Setting allowed models variable (comma-separated list) -->
         <set-variable name="allowedModels" value="gpt-4o,deepseek-r1" />
         
-        <!-- Restrict access for this product to specific models -->
-        <choose>
-            <when condition="@{
-                var allowedModelsVar = context.Variables.GetValueOrDefault<string>("allowedModels") ?? string.Empty;
-                var allowedModels = allowedModelsVar.Split(',').Select(m => m.Trim().ToLowerInvariant()).ToArray();
-                var requestedModel = (context.Variables.GetValueOrDefault<string>("requestedModel") ?? string.Empty).ToLowerInvariant();
-                return !allowedModels.Any(m => m == requestedModel);
-            }">
-                <return-response>
-                    <set-status code="401" reason="Unauthorized model access" />
-                </return-response>
-            </when>
-        </choose>
+        <!-- Validate model access based on allowedModels -->
+        <include-fragment fragment-id="validate-model-access" />
 
         <!-- Capacity management - Subscription Level: allow only assigned tpm for each HR use case subscription -->
         <llm-token-limit counter-key="@(context.Subscription.Id)" tokens-per-minute="300" estimate-prompt-tokens="false" tokens-consumed-header-name="consumed-tokens" remaining-tokens-header-name="remaining-tokens" token-quota="100000" token-quota-period="Monthly" retry-after-header-name="retry-after" />
