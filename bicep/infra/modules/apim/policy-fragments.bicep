@@ -34,24 +34,6 @@ resource aadAuthPolicyFragment 'Microsoft.ApiManagement/service/policyFragments@
   }
 }
 
-resource validateRoutesPolicyFragment 'Microsoft.ApiManagement/service/policyFragments@2022-08-01' = {
-  parent: apimService
-  name: 'validate-routes'
-  properties: {
-    value: loadTextContent('./policies/frag-validate-routes.xml')
-    format: 'rawxml'
-  }
-}
-
-resource backendRoutingPolicyFragment 'Microsoft.ApiManagement/service/policyFragments@2022-08-01' = {
-  parent: apimService
-  name: 'backend-routing'
-  properties: {
-    value: loadTextContent('./policies/frag-backend-routing.xml')
-    format: 'rawxml'
-  }
-}
-
 resource openAIUsagePolicyFragment 'Microsoft.ApiManagement/service/policyFragments@2022-08-01' = {
   parent: apimService
   name: 'openai-usage'
@@ -93,15 +75,6 @@ resource raiseThrottlingEventsPolicyFragment 'Microsoft.ApiManagement/service/po
   name: 'raise-throttling-events'
   properties: {
     value: loadTextContent('./policies/frag-raise-throttling-events.xml')
-    format: 'rawxml'
-  }
-}
-
-resource dynamicThrottlingAssignmentFragment 'Microsoft.ApiManagement/service/policyFragments@2022-08-01' = {
-  parent: apimService
-  name: 'dynamic-throttling-assignment'
-  properties: {
-    value: loadTextContent('./policies/frag-dynamic-throttling-assignment.xml')
     format: 'rawxml'
   }
 }
@@ -157,39 +130,22 @@ resource aiFoundryDeploymentsPolicyFragment 'Microsoft.ApiManagement/service/pol
 
 @description('The name of the AAD auth policy fragment')
 output aadAuthPolicyFragmentName string = aadAuthPolicyFragment.name
-
-@description('The name of the validate routes policy fragment')
-output validateRoutesPolicyFragmentName string = validateRoutesPolicyFragment.name
-
-@description('The name of the backend routing policy fragment')
-output backendRoutingPolicyFragmentName string = backendRoutingPolicyFragment.name
-
 @description('The name of the OpenAI usage policy fragment')
 output openAIUsagePolicyFragmentName string = openAIUsagePolicyFragment.name
-
 @description('The name of the OpenAI usage streaming policy fragment')
 output openAIUsageStreamingPolicyFragmentName string = openAIUsageStreamingPolicyFragment.name
-
 @description('The name of the AI usage policy fragment')
 output aiUsagePolicyFragmentName string = aiUsagePolicyFragment.name
-
 @description('The name of the throttling events policy fragment')
 output throttlingEventsPolicyFragmentName string = throttlingEventsPolicyFragment.name
-
-@description('The name of the dynamic throttling assignment policy fragment')
-output dynamicThrottlingAssignmentFragmentName string = dynamicThrottlingAssignmentFragment.name
-
 @description('The name of the PII anonymization policy fragment')
 output piiAnonymizationPolicyFragmentName string = piiAnonymizationPolicyFragment.name
 
 @description('The name of the PII deanonymization policy fragment')
 output piiDenonymizationPolicyFragmentName string = piiDenonymizationPolicyFragment.name
-
 @description('The name of the PII state saving policy fragment')
 output piiStateSavingPolicyFragmentName string = enablePIIAnonymization ? piiStateSavingPolicyFragment.name : ''
-
 @description('The name of the AI Foundry compatibility policy fragment')
 output aiFoundryCompatibilityPolicyFragmentName string = enablePIIAnonymization ? aiFoundryCompatibilityPolicyFragment.name : ''
-
 @description('The name of the AI Foundry deployments policy fragment')
 output aiFoundryDeploymentsPolicyFragmentName string = enableAIModelInference ? aiFoundryDeploymentsPolicyFragment.name : ''

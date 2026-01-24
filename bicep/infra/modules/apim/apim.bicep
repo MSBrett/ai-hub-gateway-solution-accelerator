@@ -130,22 +130,6 @@ resource managedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2018-
   name: managedIdentityName
 }
 
-// resource eventHub 'Microsoft.EventHub/namespaces/eventhubs@2023-01-01-preview' existing = {
-//   name: eventHubName
-// }
-
-// resource eventHubPII 'Microsoft.EventHub/namespaces/eventhubs@2023-01-01-preview' existing = {
-//   name: eventHubPIIName
-// }
-
-// resource contentSafetyService 'Microsoft.CognitiveServices/accounts@2023-05-01' existing = {
-//   name: contentSafetyServiceName
-// }
-
-// resource aiLanguageService 'Microsoft.CognitiveServices/accounts@2023-05-01' existing = {
-//   name: aiLanguageServiceName
-// }
-
 resource apimService 'Microsoft.ApiManagement/service@2024-05-01' = {
   name: name
   location: location
@@ -229,30 +213,6 @@ module apimAiSearchIndexApi './api.bicep' = if (enableAzureAISearch) {
     policyFragments
   ]
 }
-
-// module apimAiSearchServiceApi './api.bicep' = if (enableAzureAISearch) {
-//   name: 'azure-ai-search-service-api'
-//   params: {
-//     serviceName: apimService.name
-//     apiName: 'azure-ai-search-service-api'
-//     path: 'search/service'
-//     apiRevision: '1'
-//     apiDispalyName: 'Azure AI Search Service API (service administration)'
-//     subscriptionRequired: entraAuth ? false:true
-//     subscriptionKeyName: 'api-key'
-//     openApiSpecification: loadTextContent('./ai-search-api/Azure AI Search Service API.openapi.yaml')
-//     apiDescription: 'Azure AI Search Index Client APIs'
-//     policyDocument: loadTextContent('./policies/ai-search-service-api-policy.xml')
-//     enableAPIDeployment: true
-//   }
-//   dependsOn: [
-//     aadAuthPolicyFragment
-//     validateRoutesPolicyFragment
-//     backendRoutingPolicyFragment
-//     aiUsagePolicyFragment
-//     throttlingEventsPolicyFragment
-//   ]
-// }
 
 module apimOpenAIRealTimetApi './api.bicep' = if (enableOpenAIRealtime) {
   name: 'openai-realtime-ws-api'
