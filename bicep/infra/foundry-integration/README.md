@@ -2,6 +2,8 @@
 
 This module enables Azure AI Foundry projects to access AI models through your Azure API Management (APIM) gateway, supporting the **Bring Your Own AI Gateway** pattern for enterprise AI governance.
 
+> **💡 Tip**: For automated use case onboarding that includes Foundry connections, Key Vault secrets, and APIM products in a single deployment, see [Citadel Access Contracts](../citadel-access-contracts/README.md). The Access Contracts module integrates this Foundry functionality automatically.
+
 ## 📋 Overview
 
 The APIM connection integration allows organizations to:
@@ -302,6 +304,7 @@ agent = client.agents.create_agent(
 - [APIM Connection Objects](https://github.com/azure-ai-foundry/foundry-samples/blob/main/infrastructure/infrastructure-setup-bicep/01-connections/apim/APIM-Connection-Objects.md)
 - [Foundry Samples Repository](https://github.com/azure-ai-foundry/foundry-samples)
 - [Azure AI Projects Agent Samples](https://github.com/Azure/azure-sdk-for-python/tree/main/sdk/ai/azure-ai-projects/samples/agents)
+- [Citadel Access Contracts](../citadel-access-contracts/README.md) - Automated use case onboarding with Foundry integration
 
 ---
 

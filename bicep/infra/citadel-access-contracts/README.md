@@ -9,6 +9,7 @@ This package eliminates manual APIM configuration by providing:
 - 🔌 **API Integration**: Automatic API attachment to product with custom or default policies
 - 🔑 **Subscription Management**: Auto-generated subscription with secure API keys
 - 🔐 **Flexible Secret Storage**: Optional Azure Key Vault integration or direct credential output
+- 🤖 **Azure AI Foundry Integration**: Optional APIM connection creation for Foundry agents
 - 📝 **Declarative Configuration**: Simple `.bicepparam` & `.xml` files for version control per use case
 
 ## What Gets Created
@@ -18,11 +19,13 @@ This package eliminates manual APIM configuration by providing:
 | **APIM Product** | `{code}-{BU}-{UseCase}-{ENV}` | Product per service (e.g., `LLM-Healthcare-PatientAssistant-DEV`) with attached APIs and policies |
 | **APIM Subscription** | `{product}-SUB-01` | Subscription with API key |
 | **Key Vault Secrets** | `{secretName}` | Endpoint URL and API key (optional) |
+| **Foundry Connection** | `{prefix}-{code}` | APIM connection for AI Foundry agents (optional) |
 
 ## Key Features
 
 ✨ **Simplified Parameters**: No need for full resource IDs - just API names  
 🔄 **Optional Key Vault**: Choose between Key Vault storage or direct output  
+🤖 **Optional Foundry Integration**: Create APIM connections for AI agents  
 📋 **Policy Templates**: Pre-built policies for common use cases  
 🎯 **Multi-Service Support**: Onboard multiple AI services in one deployment  
 🔒 **Secure by Default**: Credentials stored in Key Vault or marked as secrets  
@@ -33,14 +36,15 @@ This package eliminates manual APIM configuration by providing:
 
 below are the high-level steps to deploy the use case onboarding Bicep package before diving into the detailed documentation:
 
-0. **Create a folder dedicated for use-cases contracts**: a folder like `usecases-contracts` in the citadel-access-contracts module to hold your use case specific files. 
-1. **Create a use-case contract folder**: under the use cases contracts folder, create a new folder for your use case (e.g., `businessunit-usecasename-environment`).
-1. **Prepare Parameter File**: Create new use case `.bicepparam` file for your use case (you can use `main.bicepaparam` as a base) under the dedicated folder.
-2. **Create/Customize APIM Policy**: Use default or create a custom XML policy. For simplicity, policy file can be named `policy.xml`.
-3. **Deploy template with the prepared parameter file**:
+0. **Create a folder dedicated for use-cases contracts**: a folder like `contracts` in the citadel-access-contracts module to hold your use case specific files. 
+1. **Create a use-case contract folder**: under the contracts folder, create a new folder for your use case following the pattern `<businessunit>-<usecasename>` (e.g. `sales-assistant`, `hr-chatagent`).
+2. **Create an environment subfolder**: under the use case folder, create a subfolder for each environment (e.g. `dev`, `test`, `prod`).
+3. **Prepare Parameter File**: Create new use case `.bicepparam` file (you can use `main.bicepparam` as a base) under the environment folder.
+4. **Create/Customize APIM Policy**: Use default or create a custom XML policy. For simplicity, policy file can be named `ai-product-policy.xml` and placed in the same environment folder.
+5. **Deploy template with the prepared parameter file**:
 ```bash
 # This can be executed in CLI or through a DevOps pipeline
-az deployment sub create --name <use-case-contract-name> --location <location> --template-file main.bicep --parameters <use-case-contract-folder/use-case.bicepparam>
+az deployment sub create --name <use-case-contract-name> --location <location> --template-file main.bicep --parameters contracts/<businessunit-usecasename>/<environment>/main.bicepparam
 ```
 
 >NOTE: Ensure that you are updating values according to your environment and folder structure.
@@ -65,6 +69,8 @@ flowchart TB
         D6{Use Key Vault?}
         D7[Store Secrets in KV]
         D8[Output Credentials]
+        D9{Use Foundry?}
+        D10[Create Foundry Connections]
     end
 
     subgraph Output["📤 Outputs"]
@@ -72,12 +78,16 @@ flowchart TB
         O2[Subscription Keys]
         O3[KV Secret Names]
         O4[Direct Credentials]
+        O5[Foundry Connections]
     end
 
     Input --> Deploy
     D1 --> D2 --> D3 --> D4 --> D5 --> D6
     D6 -->|Yes| D7 --> O3
     D6 -->|No| D8 --> O4
+    D5 --> D9
+    D9 -->|Yes| D10 --> O5
+    D9 -->|No| O2
     D2 --> O1
     D5 --> O2
 ```
@@ -90,12 +100,16 @@ Below is a suggested flow for client applications (i.e. agents) interacting with
 sequenceDiagram
     participant App as AI Agent/App
     participant KV as Azure Key Vault
+    participant Foundry as AI Foundry
     participant APIM as AI Gateway
     participant AI as AI Services
 
     alt Using Key Vault
         App->>KV: Get endpoint + API key
         KV-->>App: Return secrets
+    else Using Foundry Connection
+        App->>Foundry: Use APIM connection
+        Foundry->>Foundry: Get stored credentials
     else Direct Credentials
         Note over App: Use credentials from deployment output
     end
@@ -122,24 +136,33 @@ citadel-access-contracts/
 │   ├── apimOnboardService.bicep        # Product + subscription creation
 │   ├── apimProduct.bicep               # APIM product module
 │   ├── apimSubscription.bicep          # Subscription module
-│   └── kvSecrets.bicep                 # Key Vault secret storage
+│   ├── kvSecrets.bicep                 # Key Vault secret storage
+│   └── foundryConnection.bicep         # Azure AI Foundry connection module
 ├── policies/
 │   └── default-ai-product-policy.xml   # Default product policy
-├── use-cases-contracts/                # Use-case contracs folder for source control 
-│   └── <your-use-case-folder>/         # Custom use case folders
-│       ├── <usecase.bicepparam>        # Use case specific parameters
-│       └── <policy.xml>                # Custom policy file
+├── contracts/                          # Use-case contracts folder for source control 
+│   └── <businessunit-usecasename>/     # Use case folder (e.g., sales-assistant)
+│       ├── dev/                        # Environment subfolder
+│       │   ├── main.bicepparam         # Use case specific parameters
+│       │   └── ai-product-policy.xml   # Custom policy file
+│       ├── test/                       # Test environment
+│       │   ├── main.bicepparam
+│       │   └── ai-product-policy.xml
+│       └── prod/                       # Production environment
+│           ├── main.bicepparam
+│           └── ai-product-policy.xml
 └── samples/
-    ├── healthcare-chatbot/             # Use case 1: Healthcare AI
-    │   ├── usecase.bicepparam              # Deployment parameters
-    │   └── policy.xml                      # Custom APIM policy
-    ├── customer-support-agent/         # Use case 2: Support AI
-    │   ├── usecase.bicepparam
-    │   └── policy.xml
-    └── document-analysis-pipeline/     # Use case 3: Document AI
-        ├── usecase.bicepparam
-        ├── doc-policy.xml              # Document Intelligence policy
-        └── llm-policy.xml              # LLM policy
+    ├── healthcare-chatbot/             # Sample: Healthcare AI
+    │   ├── dev/
+    │   │   ├── main.bicepparam         # Deployment parameters
+    │   │   └── ai-product-policy.xml   # Custom APIM policy
+    │   └── prod/
+    │       ├── main.bicepparam
+    │       └── ai-product-policy.xml
+    └── customer-support-agent/         # Sample: Support AI
+        └── dev/
+            ├── main.bicepparam
+            └── ai-product-policy.xml
 ```
 
 ---
@@ -157,6 +180,9 @@ citadel-access-contracts/
 | `apiNameMapping` | object | ✅ | Map service codes to API names | `{ OAI: ["azure-openai-service-api"], ... }` |
 | `services` | array | ✅ | Services to onboard | See [Services Schema](#services-schema) below |
 | `productTerms` | string | ❌ | Product terms of service | "By using this product..." |
+| `useTargetFoundry` | bool | ❌ | Create Foundry connections (default: `false`) | `true` or `false` |
+| `foundry` | object | ❌* | AI Foundry coordinates (*required if useTargetFoundry=true) | `{ subscriptionId, resourceGroupName, accountName, projectName }` |
+| `foundryConfig` | object | ❌ | Foundry connection configuration | See [Foundry Config](#foundry-configuration) below |
 
 
 #### Service Code mapping
@@ -216,10 +242,12 @@ But each service will have its own product + subscription + secrets (i.e llm wil
 | APIM Product | APIM | `<serviceCode>-<BU>-<UseCase>-<ENV>` | One per service code you include |
 | APIM Subscription | APIM | `<product>-SUB-01` | Primary key is captured into Key Vault |
 | Key Vault Secrets | KV | `endpointSecretName`, `apiKeySecretName` | One endpoint + one key per service |
+| Foundry Connection | AI Foundry | `<prefix>-<serviceCode>` | One connection per service (if enabled) |
 
 Naming examples
 - Product: `LLM-Retail-FinancialAssistant-DEV`
 - Subscription: `LLM-Retail-FinancialAssistant-DEV-SUB-01`
+- Foundry Connection: `Retail-FinancialAssistant-DEV-LLM`
 
 ---
 
@@ -231,6 +259,7 @@ Naming examples
 |----------|-------------|---------------|
 | **Citadel Compliant APIM Instance** | with published APIs matching your `apiNameMapping` | `az apim api list -g <rg> -n <apim-name>` |
 | **Azure Key Vault** | Accessible with secret set permissions (if using KV) | `az keyvault show -n <kv-name>` |
+| **Azure AI Foundry** | Account and project must exist (if using Foundry) | `az cognitiveservices account show -n <account-name> -g <rg>` |
 
 ### Permissions Required
 
@@ -240,35 +269,39 @@ The deployment identity needs:
 |-------|------|---------|
 | APIM Resource Group | `API Management Service Contributor` | Create products and subscriptions |
 | Target Key Vault (if used) | `Key Vault Secrets Officer` | Write secrets |
+| AI Foundry Resource Group (if used) | `Contributor` | Create connections |
 | Subscription | `Reader` | Reference existing resources |
 
 ---
 
 ## ⚡ Quick Start Guide
 
-### Step 1: Create base use case folder
+### Step 1: Create use case folder with environment subfolder
 
-A custom folder dedeciated for the use case with the a copy of both the main.bicepparam and ai-default-policy.xml as base to start with.
+Create a folder structure following the pattern `contracts/<businessunit-usecasename>/<environment>/` with copies of both the main.bicepparam and default policy as a base.
 
 ```powershell
-mkdir bicep/infra/citadel-access-contracts/usecases-contracts/healthcare-chatbot-dev
-cd bicep/infra/citadel-access-contracts/usecases-contracts/healthcare-chatbot-dev
-cp ../../main.bicepparam healthcare-chatbot-dev.bicepparam
-cp ../../policies/default-ai-product-policy.xml policy.xml
+# Create the folder structure: contracts/healthcare-chatbot/dev/
+mkdir -p bicep/infra/citadel-access-contracts/contracts/healthcare-chatbot/dev
+cd bicep/infra/citadel-access-contracts/contracts/healthcare-chatbot/dev
+
+# Copy template files (note: path goes up 3 levels due to environment subfolder)
+cp ../../../main.bicepparam main.bicepparam
+cp ../../../policies/default-ai-product-policy.xml ai-product-policy.xml
 ```
 
 
 ### Step 2: Configure Your Parameters
 
 ```powershell
-# Edit healthcare-chatbot-dev.bicepparam
-code healthcare-chatbot-dev.bicepparam
+# Edit main.bicepparam in the environment folder
+code main.bicepparam
 ```
 
 Update these values:
 
 ```bicep
-using '../../main.bicep'
+using '../../../main.bicep'
 
 param apim = {
   subscriptionId: 'YOUR-SUBSCRIPTION-ID'        // ← Update
@@ -301,7 +334,7 @@ param services = [
     code: 'LLM'
     endpointSecretName: 'OPENAI-ENDPOINT'
     apiKeySecretName: 'OPENAI-API-KEY'
-    policyXml: loadTextContent('policy.xml')  // or '' for default
+    policyXml: loadTextContent('ai-product-policy.xml')  // or '' for default
   }
   // Add more services as needed
 ]
@@ -310,23 +343,29 @@ param services = [
 ### Step 3: Validate Configuration
 
 ```powershell
-
-# Preview what will be created
+# Preview what will be created (run from the environment folder)
 az deployment sub what-if `
   --location swedencentral `
-  --template-file ../../main.bicep `
-  --parameters healthcare-chatbot-dev.bicepparam
+  --template-file ../../../main.bicep `
+  --parameters main.bicepparam
 ```
 
 ### Step 4: Deploy
 
 ```powershell
-# Deploy at subscription scope
+# Deploy at subscription scope (run from the environment folder)
 az deployment sub create `
-  --name healthcare-chatbot-onboarding `
+  --name healthcare-chatbot-dev-onboarding `
   --location swedencentral `
-  --template-file ../../main.bicep `
-  --parameters healthcare-chatbot-dev.bicepparam
+  --template-file ../../../main.bicep `
+  --parameters main.bicepparam
+
+# Or run from the citadel-access-contracts root folder:
+az deployment sub create `
+  --name healthcare-chatbot-dev-onboarding `
+  --location swedencentral `
+  --template-file main.bicep `
+  --parameters contracts/healthcare-chatbot/dev/main.bicepparam
 ```
 
 ### Step 5: Verify Deployment
@@ -365,7 +404,7 @@ print(f"Endpoint: {endpoint}")
 # api_key is ready to use as api-key header
 ```
 
-Also you can use the [citadel-governance-hub-primary-tests](../../../validation/citadel-governance-hub-primary-tests.ipynb) notebook to validate end-to-end connectivity of the newly created access contract.
+Also you can use the [citadel-access-contracts-tests](../../../validation/citadel-access-contracts-tests.ipynb) notebook to validate end-to-end connectivity of the newly created access contract.
 
 ---
 
@@ -436,6 +475,115 @@ Write-Host "##vso[task.setvariable variable=LLM_KEY;issecret=true]$oaiKey"
 
 ⚠️ **Security Note**: When using direct output, handle credentials as secrets in your CI/CD system.
 
+### Option 3: Use Microsoft Foundry Connections (Recommended for Agents)
+
+**When to use**: Building AI agents in Microsoft Foundry that need APIM gateway access
+
+```bicep
+param useTargetFoundry = true
+
+param foundry = {
+  subscriptionId: 'YOUR-FOUNDRY-SUB-ID'
+  resourceGroupName: 'YOUR-FOUNDRY-RG'
+  accountName: 'YOUR-FOUNDRY-ACCOUNT'
+  projectName: 'YOUR-PROJECT-NAME'
+}
+
+param foundryConfig = {
+  connectionNamePrefix: ''        // Empty = use useCase naming
+  deploymentInPath: 'false'       // Model in request body
+  isSharedToAll: false            // Share with project users
+  inferenceAPIVersion: ''         // APIM defaults
+  deploymentAPIVersion: ''        // APIM defaults
+  staticModels: []                // Dynamic discovery
+  listModelsEndpoint: ''          // APIM defaults
+  getModelEndpoint: ''            // APIM defaults
+  deploymentProvider: ''          // AzureOpenAI format
+  customHeaders: {}               // No custom headers
+  authConfig: {}                  // Default api-key header
+}
+```
+
+**Benefits**:
+- ✅ Seamless integration with AI Foundry agents
+- ✅ Credentials stored securely in Foundry connection
+- ✅ Supports the "Bring Your Own AI Gateway" pattern
+- ✅ Automatic model discovery from APIM
+- ✅ No need to manage secrets separately
+
+**Usage in Foundry Agent**:
+
+```python
+import os
+from azure.ai.projects import AIProjectClient
+from azure.identity import DefaultAzureCredential
+
+# Connection name follows pattern: <prefix>-<serviceCode>
+# Example: HR-ChatBot-DEV-LLM
+connection_name = "HR-ChatBot-DEV-LLM"
+model_deployment = f"{connection_name}/gpt-4o"
+
+os.environ["AZURE_AI_MODEL_DEPLOYMENT_NAME"] = model_deployment
+
+client = AIProjectClient(
+    credential=DefaultAzureCredential(),
+    endpoint="https://your-foundry.cognitiveservices.azure.com/"
+)
+
+# Create agent using the APIM connection
+agent = client.agents.create_agent(
+    model=model_deployment,
+    name="my-hr-assistant",
+    instructions="You are a helpful HR assistant."
+)
+```
+
+### Foundry Configuration Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `connectionNamePrefix` | string | `''` | Custom prefix for connection names. Empty uses `<BU>-<UseCase>-<ENV>` |
+| `deploymentInPath` | string | `'false'` | `'true'`: model in URL, `'false'`: model in body |
+| `isSharedToAll` | bool | `false` | Share connection with all project users |
+| `inferenceAPIVersion` | string | `''` | API version for chat/embeddings (empty = APIM defaults) |
+| `deploymentAPIVersion` | string | `''` | API version for discovery (empty = APIM defaults) |
+| `staticModels` | array | `[]` | Fixed model list (skips discovery) |
+| `listModelsEndpoint` | string | `''` | Custom list endpoint (empty = `/deployments`) |
+| `getModelEndpoint` | string | `''` | Custom get endpoint (empty = `/deployments/{id}`) |
+| `deploymentProvider` | string | `''` | Discovery format (`AzureOpenAI` or `OpenAI`) |
+| `customHeaders` | object | `{}` | Additional headers for requests |
+| `authConfig` | object | `{}` | Custom auth header config |
+
+### Combined Targets Example
+
+You can use Key Vault AND Foundry together:
+
+```bicep
+// Store secrets in Key Vault for traditional apps
+param useTargetAzureKeyVault = true
+param keyVault = {
+  subscriptionId: 'YOUR-SUB-ID'
+  resourceGroupName: 'YOUR-KV-RG'
+  name: 'YOUR-KV-NAME'
+}
+
+// Also create Foundry connections for AI agents
+param useTargetFoundry = true
+param foundry = {
+  subscriptionId: 'YOUR-FOUNDRY-SUB-ID'
+  resourceGroupName: 'YOUR-FOUNDRY-RG'
+  accountName: 'YOUR-FOUNDRY-ACCOUNT'
+  projectName: 'YOUR-PROJECT-NAME'
+}
+```
+
+This creates:
+- APIM products and subscriptions
+- Key Vault secrets for traditional applications
+- Foundry APIM connections for AI agents
+
+All using the same subscription keys, ensuring consistent governance.
+
 ---
 
 ## 📝 Creating Custom Policies
@@ -466,9 +614,9 @@ param services = [
 
 You can use the [default-ai-product-policy.xml](./policies/default-ai-product-policy.xml) as a base policy for LLM and extend/modify it as needed.
 
-Additional policy capabilities can be found in [Citadel-Access-Contracts-Policy.md](../../../guides/citadel-access-contracts-policy.md) for more options and patterns that can be leveraged.
+Additional policy capabilities can be found in [Citadel-Access-Contracts-Policy.md](./citadel-access-contracts-policy.md) for more options and patterns that can be leveraged.
 
->Note: APIM has power policy engine that can be used even beyond what is provided in Citadel Governnace Hub. Leverage agentic development like GitHub Copilot to help you create custom policies based on your requirements.
+>Note: APIM has power policy engine that can be used even beyond what is provided in Citadel Governance Hub. Leverage agentic development like GitHub Copilot to help you create custom policies based on your requirements.
 
 **Step 2**: Reference policy in bicepparam
 
@@ -581,29 +729,6 @@ Write-Host "##vso[task.setvariable variable=OAI_KEY;issecret=true]$($oaiCreds.ap
 - Never log or display in plaintext
 - Store in secure secret management systems
 - Rotate keys regularly
-
----
-
-## 🛠️ Troubleshooting
-
-### Common Issues
-
-| Issue | Cause | Solution |
-|-------|-------|----------|
-| **API not found** | API name doesn't exist in APIM | Verify with `az apim api list -g <rg> -n <apim>` |
-| **Authorization failed** | Missing permissions | Grant `API Management Service Contributor` |
-| **Secret not created** | Key Vault permissions | Grant `Key Vault Secrets Officer` |
-| **Product not visible** | Product not published | Check product state in APIM portal |
-| **401 on API calls** | Wrong subscription key | Verify key from Key Vault or deployment output |
-| **403 - Model Not Allowed** | Model blocked by policy | Check allowed models in policy XML |
-| **429 - Rate Limit** | Exceeded rate limit | Reduce request frequency or adjust policy |
-
-### Getting Help
-
-- Check API errors in APIM Test Console
-- Review deployment operation logs
-- Enable APIM diagnostics for detailed request traces
-- Verify network connectivity from app to APIM
 
 ---
 
