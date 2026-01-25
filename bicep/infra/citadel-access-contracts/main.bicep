@@ -21,6 +21,45 @@ param services array
 @description('Optional product terms shown to subscribers')
 param productTerms string = ''
 
+// ============================================================================
+// AZURE AI FOUNDRY INTEGRATION PARAMETERS
+// ============================================================================
+
+@description('Whether to create Azure AI Foundry connection for this use case. If true, foundry parameter must be provided.')
+param useTargetFoundry bool = false
+
+@description('Azure AI Foundry configuration for creating APIM connections. Required if useTargetFoundry is true.')
+param foundry object = {
+  subscriptionId: ''
+  resourceGroupName: ''
+  accountName: ''
+  projectName: ''
+}
+
+@description('Foundry connection configuration options')
+param foundryConfig object = {
+  // Connection naming: if empty, uses useCase naming convention
+  connectionNamePrefix: ''
+  // Whether deployment name is in URL path (true) or request body (false)
+  deploymentInPath: 'false'
+  // Share connection to all project users
+  isSharedToAll: false
+  // API version for inference calls (empty = APIM defaults)
+  inferenceAPIVersion: ''
+  // API version for deployment discovery (empty = APIM defaults)
+  deploymentAPIVersion: ''
+  // Static model list (optional)
+  staticModels: []
+  // Custom discovery endpoints (optional - leave empty for APIM defaults)
+  listModelsEndpoint: ''
+  getModelEndpoint: ''
+  deploymentProvider: ''
+  // Custom headers for requests
+  customHeaders: {}
+  // Custom auth configuration
+  authConfig: {}
+}
+
 var productPostfix = '${useCase.businessUnit}-${useCase.useCaseName}-${useCase.environment}'
 
 // Default APIM product policy (applied when a service item does not provide policyXmlPath)
@@ -79,6 +118,45 @@ module kvWrites 'modules/kvSecrets.bicep' = [for (s, i) in services: if (useTarg
   }
 }]
 
+// ============================================================================
+// AZURE AI FOUNDRY CONNECTION DEPLOYMENT
+// ============================================================================
+// Create Foundry APIM connections per service (only if useTargetFoundry is true)
+// This enables Foundry agents to access AI models through the APIM gateway
+
+resource foundryRg 'Microsoft.Resources/resourceGroups@2022-09-01' existing = if (useTargetFoundry) {
+  scope: subscription(foundry.subscriptionId)
+  name: foundry.resourceGroupName
+}
+
+// Generate connection name based on config or use case naming
+var foundryConnectionPrefix = !empty(foundryConfig.connectionNamePrefix) ? foundryConfig.connectionNamePrefix : '${useCase.businessUnit}-${useCase.useCaseName}-${useCase.environment}'
+
+module foundryConnections 'modules/foundryConnection.bicep' = [for (s, i) in services: if (useTargetFoundry) {
+  name: 'foundry-${s.code}-${productPostfix}'
+  scope: foundryRg
+  params: {
+    aiFoundryAccountName: foundry.accountName
+    aiFoundryProjectName: foundry.projectName
+    connectionName: '${foundryConnectionPrefix}-${s.code}'
+    targetUrl: '${apimSvc.properties.gatewayUrl}/${onboard[i].outputs.apiPath}'
+    apimSubscriptionKey: onboard[i].outputs.subscriptionPrimaryKey
+    isSharedToAll: foundryConfig.?isSharedToAll ?? false
+    deploymentInPath: foundryConfig.?deploymentInPath ?? 'false'
+    inferenceAPIVersion: foundryConfig.?inferenceAPIVersion ?? ''
+    deploymentAPIVersion: foundryConfig.?deploymentAPIVersion ?? ''
+    staticModels: foundryConfig.?staticModels ?? []
+    listModelsEndpoint: foundryConfig.?listModelsEndpoint ?? ''
+    getModelEndpoint: foundryConfig.?getModelEndpoint ?? ''
+    deploymentProvider: foundryConfig.?deploymentProvider ?? ''
+    customHeaders: foundryConfig.?customHeaders ?? {}
+    authConfig: foundryConfig.?authConfig ?? {}
+  }
+  dependsOn: [
+    onboard
+  ]
+}]
+
 output apimGatewayUrl string = apimSvc.properties.gatewayUrl
 output useKeyVault bool = useTargetAzureKeyVault
 
@@ -110,3 +188,16 @@ output endpoints array = [for (s, i) in services: {
   #disable-next-line outputs-should-not-contain-secrets
   apiKey: useTargetAzureKeyVault ? '' : string(onboard[i].outputs.subscriptionPrimaryKey)
 }]
+
+// ============================================================================
+// FOUNDRY CONNECTION OUTPUTS
+// ============================================================================
+output useFoundry bool = useTargetFoundry
+
+output foundryConnections array = [for (s, i) in services: useTargetFoundry ? {
+  code: s.code
+  connectionName: '${foundryConnectionPrefix}-${s.code}'
+  targetUrl: '${apimSvc.properties.gatewayUrl}/${onboard[i].outputs.apiPath}'
+  foundryAccount: foundry.accountName
+  foundryProject: foundry.projectName
+} : {}]

@@ -5,10 +5,10 @@ using 'main.bicep'
 // ============================================================================
 // This parameter file is used to onboard a new use case to the AI Governance Hub.
 // It creates APIM products, subscriptions, and optionally stores credentials
-// in Azure Key Vault.
+// in Azure Key Vault and/or creates Azure AI Foundry connections.
 //
 // REQUIRED PARAMETERS: apim, keyVault, useCase, apiNameMapping, services
-// OPTIONAL PARAMETERS: useTargetAzureKeyVault, productTerms
+// OPTIONAL PARAMETERS: useTargetAzureKeyVault, productTerms, useTargetFoundry, foundry, foundryConfig
 // ============================================================================
 
 // ============================================================================
@@ -119,7 +119,7 @@ param useCase = {
 }
 
 // ============================================================================
-// REQUIRED: API Name Mapping
+// REQUIRED: API Name Mapping (bundled APIs)
 // ============================================================================
 // Maps service codes to their corresponding API names in APIM.
 // These APIs must already exist in your APIM instance before deployment.
@@ -254,14 +254,110 @@ param services = [
 param productTerms = ''
 
 // ============================================================================
+// OPTIONAL: Azure AI Foundry Integration
+// ============================================================================
+// Enable this section to automatically create Azure AI Foundry connections
+// for each service being onboarded. This allows Foundry agents to access
+// AI models through the APIM gateway using the created subscription keys.
+//
+// When to use:
+// - Building AI agents in Azure AI Foundry that need APIM gateway access
+// - Implementing the "Bring Your Own AI Gateway" pattern
+// - Centralizing AI model access through governance policies
+//
+// Requirements:
+// - Azure AI Foundry account and project must already exist
+// - Deploying identity must have Contributor role on the Foundry resource group
+// ============================================================================
+
+// Set to true to create Foundry APIM connections for each service
+param useTargetFoundry = false
+
+// Azure AI Foundry resource coordinates (required if useTargetFoundry=true)
+// Example:
+// param foundry = {
+//   subscriptionId: 'd287984f-2790-4baa-9520-59ae8169ed0d'
+//   resourceGroupName: 'rg-ai-foundry-prod'
+//   accountName: 'my-foundry-account'
+//   projectName: 'my-ai-project'
+// }
+param foundry = {
+  subscriptionId: '00000000-0000-0000-0000-000000000000' // Replace with Foundry subscription ID
+  resourceGroupName: 'rg-foundry-resource-group'         // Replace with Foundry resource group
+  accountName: 'foundry-account-name'                    // Replace with AI Foundry account name
+  projectName: 'foundry-project-name'                    // Replace with AI Foundry project name
+}
+
+// ============================================================================
+// OPTIONAL: Foundry Connection Configuration
+// ============================================================================
+// Advanced configuration for Foundry APIM connections. These settings control
+// how Foundry agents interact with the APIM gateway.
+//
+// Configuration Options:
+// - connectionNamePrefix: Custom prefix for connection names
+//   Default: Uses '<businessUnit>-<useCaseName>-<environment>' from useCase
+//   Final name: '<prefix>-<serviceCode>' (e.g., 'HR-ChatBot-DEV-LLM')
+//
+// - deploymentInPath: Controls how model names are passed in requests
+//   'true': Model name in URL path (/deployments/{model}/chat/completions)
+//   'false': Model name in request body ({"model": "{model}"})
+//
+// - isSharedToAll: Share connection with all project users
+//   true: All users in the Foundry project can use this connection
+//   false: Only the connection creator can use it initially
+//
+// - inferenceAPIVersion: API version for chat/embeddings calls
+//   Leave empty to use APIM defaults (recommended)
+//
+// - deploymentAPIVersion: API version for model discovery calls
+//   Leave empty to use APIM defaults (recommended)
+//
+// - staticModels: Define a fixed list of models (skips dynamic discovery)
+//   Format: [{ name: 'gpt-4o', properties: { model: { name: 'gpt-4o', version: '2024-11-20', format: 'OpenAI' } } }]
+//
+// - listModelsEndpoint: Custom endpoint for listing available models
+//   Default (empty): Uses APIM's /deployments endpoint
+//
+// - getModelEndpoint: Custom endpoint for getting model details
+//   Default (empty): Uses APIM's /deployments/{deployment-id} endpoint
+//
+// - deploymentProvider: Format for model discovery responses ('AzureOpenAI' or 'OpenAI')
+//   Default (empty): Uses AzureOpenAI format
+//
+// - customHeaders: Additional headers to include in all requests
+//   Useful for routing policies or custom metadata
+//   Example: { 'X-Environment': 'production', 'X-Route-Policy': 'premium' }
+//
+// - authConfig: Custom authentication header configuration
+//   Default: Uses 'api-key' header with the subscription key
+//   Example for Bearer: { type: 'api_key', name: 'Authorization', format: 'Bearer {api_key}' }
+// ============================================================================
+param foundryConfig = {
+  connectionNamePrefix: ''           // Empty = use useCase naming convention
+  deploymentInPath: 'false'          // Model name in request body (false for Azure OpenAI /deployments/[deployment-id])
+  isSharedToAll: false               // Share with all project users
+  inferenceAPIVersion: ''            // Empty = APIM defaults
+  deploymentAPIVersion: ''           // Empty = APIM defaults
+  staticModels: []                   // Empty = use dynamic discovery
+  listModelsEndpoint: ''             // Empty = APIM defaults (/deployments)
+  getModelEndpoint: ''               // Empty = APIM defaults (/deployments/{deployment-id})
+  deploymentProvider: ''             // Empty = AzureOpenAI format
+  customHeaders: {}                  // No custom headers
+  authConfig: {}                     // Default api-key header is used
+}
+
+// ============================================================================
 // DEPLOYMENT NOTES
 // ============================================================================
 // Prerequisites:
 // 1. APIM instance must exist with APIs already configured
 // 2. Key Vault must exist (if useTargetAzureKeyVault=true)
-// 3. Deploying identity must have permissions:
+// 3. AI Foundry account and project must exist (if useTargetFoundry=true)
+// 4. Deploying identity must have permissions:
 //    - APIM: Contributor or API Management Service Contributor
 //    - Key Vault: Key Vault Secrets Officer (if using Key Vault)
+//    - Foundry Resource Group: Contributor (if using Foundry)
 //
 // Deployment command:
 // az deployment sub create \
@@ -275,10 +371,13 @@ param productTerms = ''
 // - products: Array of created products with IDs and display names
 // - subscriptions: Array of subscriptions with Key Vault secret references
 // - endpoints: Array of endpoint URLs and API keys (only if useTargetAzureKeyVault=false)
+// - useFoundry: Whether Foundry connections were created
+// - foundryConnections: Array of Foundry connection details (if useTargetFoundry=true)
 //
 // Security considerations:
 // - When useTargetAzureKeyVault=false, API keys appear in deployment outputs
 // - Always secure deployment outputs in CI/CD pipelines
 // - Rotate subscription keys periodically
 // - Use managed identities when possible for Key Vault access
+// - Foundry connections store API keys securely in the connection config
 // ============================================================================

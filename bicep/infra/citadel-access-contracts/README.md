@@ -9,6 +9,7 @@ This package eliminates manual APIM configuration by providing:
 - 🔌 **API Integration**: Automatic API attachment to product with custom or default policies
 - 🔑 **Subscription Management**: Auto-generated subscription with secure API keys
 - 🔐 **Flexible Secret Storage**: Optional Azure Key Vault integration or direct credential output
+- 🤖 **Azure AI Foundry Integration**: Optional APIM connection creation for Foundry agents
 - 📝 **Declarative Configuration**: Simple `.bicepparam` & `.xml` files for version control per use case
 
 ## What Gets Created
@@ -18,11 +19,13 @@ This package eliminates manual APIM configuration by providing:
 | **APIM Product** | `{code}-{BU}-{UseCase}-{ENV}` | Product per service (e.g., `LLM-Healthcare-PatientAssistant-DEV`) with attached APIs and policies |
 | **APIM Subscription** | `{product}-SUB-01` | Subscription with API key |
 | **Key Vault Secrets** | `{secretName}` | Endpoint URL and API key (optional) |
+| **Foundry Connection** | `{prefix}-{code}` | APIM connection for AI Foundry agents (optional) |
 
 ## Key Features
 
 ✨ **Simplified Parameters**: No need for full resource IDs - just API names  
 🔄 **Optional Key Vault**: Choose between Key Vault storage or direct output  
+🤖 **Optional Foundry Integration**: Create APIM connections for AI agents  
 📋 **Policy Templates**: Pre-built policies for common use cases  
 🎯 **Multi-Service Support**: Onboard multiple AI services in one deployment  
 🔒 **Secure by Default**: Credentials stored in Key Vault or marked as secrets  
@@ -65,6 +68,8 @@ flowchart TB
         D6{Use Key Vault?}
         D7[Store Secrets in KV]
         D8[Output Credentials]
+        D9{Use Foundry?}
+        D10[Create Foundry Connections]
     end
 
     subgraph Output["📤 Outputs"]
@@ -72,12 +77,16 @@ flowchart TB
         O2[Subscription Keys]
         O3[KV Secret Names]
         O4[Direct Credentials]
+        O5[Foundry Connections]
     end
 
     Input --> Deploy
     D1 --> D2 --> D3 --> D4 --> D5 --> D6
     D6 -->|Yes| D7 --> O3
     D6 -->|No| D8 --> O4
+    D5 --> D9
+    D9 -->|Yes| D10 --> O5
+    D9 -->|No| O2
     D2 --> O1
     D5 --> O2
 ```
@@ -90,12 +99,16 @@ Below is a suggested flow for client applications (i.e. agents) interacting with
 sequenceDiagram
     participant App as AI Agent/App
     participant KV as Azure Key Vault
+    participant Foundry as AI Foundry
     participant APIM as AI Gateway
     participant AI as AI Services
 
     alt Using Key Vault
         App->>KV: Get endpoint + API key
         KV-->>App: Return secrets
+    else Using Foundry Connection
+        App->>Foundry: Use APIM connection
+        Foundry->>Foundry: Get stored credentials
     else Direct Credentials
         Note over App: Use credentials from deployment output
     end
@@ -122,7 +135,8 @@ citadel-access-contracts/
 │   ├── apimOnboardService.bicep        # Product + subscription creation
 │   ├── apimProduct.bicep               # APIM product module
 │   ├── apimSubscription.bicep          # Subscription module
-│   └── kvSecrets.bicep                 # Key Vault secret storage
+│   ├── kvSecrets.bicep                 # Key Vault secret storage
+│   └── foundryConnection.bicep         # Azure AI Foundry connection module
 ├── policies/
 │   └── default-ai-product-policy.xml   # Default product policy
 ├── use-cases-contracts/                # Use-case contracs folder for source control 
@@ -157,6 +171,9 @@ citadel-access-contracts/
 | `apiNameMapping` | object | ✅ | Map service codes to API names | `{ OAI: ["azure-openai-service-api"], ... }` |
 | `services` | array | ✅ | Services to onboard | See [Services Schema](#services-schema) below |
 | `productTerms` | string | ❌ | Product terms of service | "By using this product..." |
+| `useTargetFoundry` | bool | ❌ | Create Foundry connections (default: `false`) | `true` or `false` |
+| `foundry` | object | ❌* | AI Foundry coordinates (*required if useTargetFoundry=true) | `{ subscriptionId, resourceGroupName, accountName, projectName }` |
+| `foundryConfig` | object | ❌ | Foundry connection configuration | See [Foundry Config](#foundry-configuration) below |
 
 
 #### Service Code mapping
@@ -216,10 +233,12 @@ But each service will have its own product + subscription + secrets (i.e llm wil
 | APIM Product | APIM | `<serviceCode>-<BU>-<UseCase>-<ENV>` | One per service code you include |
 | APIM Subscription | APIM | `<product>-SUB-01` | Primary key is captured into Key Vault |
 | Key Vault Secrets | KV | `endpointSecretName`, `apiKeySecretName` | One endpoint + one key per service |
+| Foundry Connection | AI Foundry | `<prefix>-<serviceCode>` | One connection per service (if enabled) |
 
 Naming examples
 - Product: `LLM-Retail-FinancialAssistant-DEV`
 - Subscription: `LLM-Retail-FinancialAssistant-DEV-SUB-01`
+- Foundry Connection: `Retail-FinancialAssistant-DEV-LLM`
 
 ---
 
@@ -231,6 +250,7 @@ Naming examples
 |----------|-------------|---------------|
 | **Citadel Compliant APIM Instance** | with published APIs matching your `apiNameMapping` | `az apim api list -g <rg> -n <apim-name>` |
 | **Azure Key Vault** | Accessible with secret set permissions (if using KV) | `az keyvault show -n <kv-name>` |
+| **Azure AI Foundry** | Account and project must exist (if using Foundry) | `az cognitiveservices account show -n <account-name> -g <rg>` |
 
 ### Permissions Required
 
@@ -240,6 +260,7 @@ The deployment identity needs:
 |-------|------|---------|
 | APIM Resource Group | `API Management Service Contributor` | Create products and subscriptions |
 | Target Key Vault (if used) | `Key Vault Secrets Officer` | Write secrets |
+| AI Foundry Resource Group (if used) | `Contributor` | Create connections |
 | Subscription | `Reader` | Reference existing resources |
 
 ---
@@ -438,6 +459,119 @@ Write-Host "##vso[task.setvariable variable=LLM_KEY;issecret=true]$oaiKey"
 
 ---
 
+## 🤖 Azure AI Foundry Integration
+
+### Option 3: Use AI Foundry Connections (Recommended for Agents)
+
+**When to use**: Building AI agents in Azure AI Foundry that need APIM gateway access
+
+```bicep
+param useTargetFoundry = true
+
+param foundry = {
+  subscriptionId: 'YOUR-FOUNDRY-SUB-ID'
+  resourceGroupName: 'YOUR-FOUNDRY-RG'
+  accountName: 'YOUR-FOUNDRY-ACCOUNT'
+  projectName: 'YOUR-PROJECT-NAME'
+}
+
+param foundryConfig = {
+  connectionNamePrefix: ''        // Empty = use useCase naming
+  deploymentInPath: 'false'       // Model in request body
+  isSharedToAll: false            // Share with project users
+  inferenceAPIVersion: ''         // APIM defaults
+  deploymentAPIVersion: ''        // APIM defaults
+  staticModels: []                // Dynamic discovery
+  listModelsEndpoint: ''          // APIM defaults
+  getModelEndpoint: ''            // APIM defaults
+  deploymentProvider: ''          // AzureOpenAI format
+  customHeaders: {}               // No custom headers
+  authConfig: {}                  // Default api-key header
+}
+```
+
+**Benefits**:
+- ✅ Seamless integration with AI Foundry agents
+- ✅ Credentials stored securely in Foundry connection
+- ✅ Supports the "Bring Your Own AI Gateway" pattern
+- ✅ Automatic model discovery from APIM
+- ✅ No need to manage secrets separately
+
+**Usage in Foundry Agent**:
+
+```python
+import os
+from azure.ai.projects import AIProjectClient
+from azure.identity import DefaultAzureCredential
+
+# Connection name follows pattern: <prefix>-<serviceCode>
+# Example: HR-ChatBot-DEV-LLM
+connection_name = "HR-ChatBot-DEV-LLM"
+model_deployment = f"{connection_name}/gpt-4o"
+
+os.environ["AZURE_AI_MODEL_DEPLOYMENT_NAME"] = model_deployment
+
+client = AIProjectClient(
+    credential=DefaultAzureCredential(),
+    endpoint="https://your-foundry.cognitiveservices.azure.com/"
+)
+
+# Create agent using the APIM connection
+agent = client.agents.create_agent(
+    model=model_deployment,
+    name="my-hr-assistant",
+    instructions="You are a helpful HR assistant."
+)
+```
+
+### Foundry Configuration Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `connectionNamePrefix` | string | `''` | Custom prefix for connection names. Empty uses `<BU>-<UseCase>-<ENV>` |
+| `deploymentInPath` | string | `'false'` | `'true'`: model in URL, `'false'`: model in body |
+| `isSharedToAll` | bool | `false` | Share connection with all project users |
+| `inferenceAPIVersion` | string | `''` | API version for chat/embeddings (empty = APIM defaults) |
+| `deploymentAPIVersion` | string | `''` | API version for discovery (empty = APIM defaults) |
+| `staticModels` | array | `[]` | Fixed model list (skips discovery) |
+| `listModelsEndpoint` | string | `''` | Custom list endpoint (empty = `/deployments`) |
+| `getModelEndpoint` | string | `''` | Custom get endpoint (empty = `/deployments/{id}`) |
+| `deploymentProvider` | string | `''` | Discovery format (`AzureOpenAI` or `OpenAI`) |
+| `customHeaders` | object | `{}` | Additional headers for requests |
+| `authConfig` | object | `{}` | Custom auth header config |
+
+### Combined Targets Example
+
+You can use Key Vault AND Foundry together:
+
+```bicep
+// Store secrets in Key Vault for traditional apps
+param useTargetAzureKeyVault = true
+param keyVault = {
+  subscriptionId: 'YOUR-SUB-ID'
+  resourceGroupName: 'YOUR-KV-RG'
+  name: 'YOUR-KV-NAME'
+}
+
+// Also create Foundry connections for AI agents
+param useTargetFoundry = true
+param foundry = {
+  subscriptionId: 'YOUR-FOUNDRY-SUB-ID'
+  resourceGroupName: 'YOUR-FOUNDRY-RG'
+  accountName: 'YOUR-FOUNDRY-ACCOUNT'
+  projectName: 'YOUR-PROJECT-NAME'
+}
+```
+
+This creates:
+- APIM products and subscriptions
+- Key Vault secrets for traditional applications
+- Foundry APIM connections for AI agents
+
+All using the same subscription keys, ensuring consistent governance.
+
+---
+
 ## 📝 Creating Custom Policies
 
 ### Using Default Policy
@@ -597,6 +731,9 @@ Write-Host "##vso[task.setvariable variable=OAI_KEY;issecret=true]$($oaiCreds.ap
 | **401 on API calls** | Wrong subscription key | Verify key from Key Vault or deployment output |
 | **403 - Model Not Allowed** | Model blocked by policy | Check allowed models in policy XML |
 | **429 - Rate Limit** | Exceeded rate limit | Reduce request frequency or adjust policy |
+| **Foundry connection failed** | Missing Foundry permissions | Grant `Contributor` on Foundry resource group |
+| **Foundry account not found** | Wrong account/project name | Verify with `az cognitiveservices account show -n <name> -g <rg>` |
+| **Agent can't find models** | Discovery endpoint issue | Check `deploymentInPath` and `deploymentProvider` settings |
 
 ### Getting Help
 
@@ -604,6 +741,7 @@ Write-Host "##vso[task.setvariable variable=OAI_KEY;issecret=true]$($oaiCreds.ap
 - Review deployment operation logs
 - Enable APIM diagnostics for detailed request traces
 - Verify network connectivity from app to APIM
+- For Foundry issues, check connection settings in AI Foundry portal
 
 ---
 
@@ -612,5 +750,6 @@ Write-Host "##vso[task.setvariable variable=OAI_KEY;issecret=true]$($oaiCreds.ap
 For issues or questions:
 - **GitHub Issues**: [Report bugs or request features](https://github.com/Azure-Samples/ai-hub-gateway-solution-accelerator/issues)
 - **Documentation**: Review the guides in `/guides`
+- **Foundry Integration**: See [Foundry Integration Guide](../foundry-integration/README.md)
 
 ---
