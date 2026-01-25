@@ -1,4 +1,4 @@
-using '../../main.bicep'
+using '../../../main.bicep'
 
 // ============================================================================
 // HR Chat Agent - Key Vault + Foundry (if enabled) - Generated from Notebook

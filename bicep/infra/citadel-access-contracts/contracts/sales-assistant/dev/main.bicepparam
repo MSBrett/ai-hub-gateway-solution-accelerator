@@ -1,4 +1,4 @@
-using '../../main.bicep'
+using '../../../main.bicep'
 
 // ============================================================================
 // Sales Assistant - Key Vault only - Generated from Notebook

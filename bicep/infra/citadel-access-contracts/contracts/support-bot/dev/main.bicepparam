@@ -1,4 +1,4 @@
-using '../../main.bicep'
+using '../../../main.bicep'
 
 // ============================================================================
 // Support Bot - Direct output (no Key Vault nor Foundry connection integration) - Generated from Notebook

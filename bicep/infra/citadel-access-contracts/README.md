@@ -36,14 +36,15 @@ This package eliminates manual APIM configuration by providing:
 
 below are the high-level steps to deploy the use case onboarding Bicep package before diving into the detailed documentation:
 
-0. **Create a folder dedicated for use-cases contracts**: a folder like `usecases-contracts` in the citadel-access-contracts module to hold your use case specific files. 
-1. **Create a use-case contract folder**: under the use cases contracts folder, create a new folder for your use case (e.g., `businessunit-usecasename-environment`).
-1. **Prepare Parameter File**: Create new use case `.bicepparam` file for your use case (you can use `main.bicepaparam` as a base) under the dedicated folder.
-2. **Create/Customize APIM Policy**: Use default or create a custom XML policy. For simplicity, policy file can be named `policy.xml`.
-3. **Deploy template with the prepared parameter file**:
+0. **Create a folder dedicated for use-cases contracts**: a folder like `contracts` in the citadel-access-contracts module to hold your use case specific files. 
+1. **Create a use-case contract folder**: under the contracts folder, create a new folder for your use case following the pattern `<businessunit>-<usecasename>` (e.g. `sales-assistant`, `hr-chatagent`).
+2. **Create an environment subfolder**: under the use case folder, create a subfolder for each environment (e.g. `dev`, `test`, `prod`).
+3. **Prepare Parameter File**: Create new use case `.bicepparam` file (you can use `main.bicepparam` as a base) under the environment folder.
+4. **Create/Customize APIM Policy**: Use default or create a custom XML policy. For simplicity, policy file can be named `ai-product-policy.xml` and placed in the same environment folder.
+5. **Deploy template with the prepared parameter file**:
 ```bash
 # This can be executed in CLI or through a DevOps pipeline
-az deployment sub create --name <use-case-contract-name> --location <location> --template-file main.bicep --parameters <use-case-contract-folder/use-case.bicepparam>
+az deployment sub create --name <use-case-contract-name> --location <location> --template-file main.bicep --parameters contracts/<businessunit-usecasename>/<environment>/main.bicepparam
 ```
 
 >NOTE: Ensure that you are updating values according to your environment and folder structure.
@@ -139,21 +140,29 @@ citadel-access-contracts/
 │   └── foundryConnection.bicep         # Azure AI Foundry connection module
 ├── policies/
 │   └── default-ai-product-policy.xml   # Default product policy
-├── use-cases-contracts/                # Use-case contracs folder for source control 
-│   └── <your-use-case-folder>/         # Custom use case folders
-│       ├── <usecase.bicepparam>        # Use case specific parameters
-│       └── <policy.xml>                # Custom policy file
+├── contracts/                          # Use-case contracts folder for source control 
+│   └── <businessunit-usecasename>/     # Use case folder (e.g., sales-assistant)
+│       ├── dev/                        # Environment subfolder
+│       │   ├── main.bicepparam         # Use case specific parameters
+│       │   └── ai-product-policy.xml   # Custom policy file
+│       ├── test/                       # Test environment
+│       │   ├── main.bicepparam
+│       │   └── ai-product-policy.xml
+│       └── prod/                       # Production environment
+│           ├── main.bicepparam
+│           └── ai-product-policy.xml
 └── samples/
-    ├── healthcare-chatbot/             # Use case 1: Healthcare AI
-    │   ├── usecase.bicepparam              # Deployment parameters
-    │   └── policy.xml                      # Custom APIM policy
-    ├── customer-support-agent/         # Use case 2: Support AI
-    │   ├── usecase.bicepparam
-    │   └── policy.xml
-    └── document-analysis-pipeline/     # Use case 3: Document AI
-        ├── usecase.bicepparam
-        ├── doc-policy.xml              # Document Intelligence policy
-        └── llm-policy.xml              # LLM policy
+    ├── healthcare-chatbot/             # Sample: Healthcare AI
+    │   ├── dev/
+    │   │   ├── main.bicepparam         # Deployment parameters
+    │   │   └── ai-product-policy.xml   # Custom APIM policy
+    │   └── prod/
+    │       ├── main.bicepparam
+    │       └── ai-product-policy.xml
+    └── customer-support-agent/         # Sample: Support AI
+        └── dev/
+            ├── main.bicepparam
+            └── ai-product-policy.xml
 ```
 
 ---
@@ -267,29 +276,32 @@ The deployment identity needs:
 
 ## ⚡ Quick Start Guide
 
-### Step 1: Create base use case folder
+### Step 1: Create use case folder with environment subfolder
 
-A custom folder dedeciated for the use case with the a copy of both the main.bicepparam and ai-default-policy.xml as base to start with.
+Create a folder structure following the pattern `contracts/<businessunit-usecasename>/<environment>/` with copies of both the main.bicepparam and default policy as a base.
 
 ```powershell
-mkdir bicep/infra/citadel-access-contracts/usecases-contracts/healthcare-chatbot-dev
-cd bicep/infra/citadel-access-contracts/usecases-contracts/healthcare-chatbot-dev
-cp ../../main.bicepparam healthcare-chatbot-dev.bicepparam
-cp ../../policies/default-ai-product-policy.xml policy.xml
+# Create the folder structure: contracts/healthcare-chatbot/dev/
+mkdir -p bicep/infra/citadel-access-contracts/contracts/healthcare-chatbot/dev
+cd bicep/infra/citadel-access-contracts/contracts/healthcare-chatbot/dev
+
+# Copy template files (note: path goes up 3 levels due to environment subfolder)
+cp ../../../main.bicepparam main.bicepparam
+cp ../../../policies/default-ai-product-policy.xml ai-product-policy.xml
 ```
 
 
 ### Step 2: Configure Your Parameters
 
 ```powershell
-# Edit healthcare-chatbot-dev.bicepparam
-code healthcare-chatbot-dev.bicepparam
+# Edit main.bicepparam in the environment folder
+code main.bicepparam
 ```
 
 Update these values:
 
 ```bicep
-using '../../main.bicep'
+using '../../../main.bicep'
 
 param apim = {
   subscriptionId: 'YOUR-SUBSCRIPTION-ID'        // ← Update
@@ -322,7 +334,7 @@ param services = [
     code: 'LLM'
     endpointSecretName: 'OPENAI-ENDPOINT'
     apiKeySecretName: 'OPENAI-API-KEY'
-    policyXml: loadTextContent('policy.xml')  // or '' for default
+    policyXml: loadTextContent('ai-product-policy.xml')  // or '' for default
   }
   // Add more services as needed
 ]
@@ -331,23 +343,29 @@ param services = [
 ### Step 3: Validate Configuration
 
 ```powershell
-
-# Preview what will be created
+# Preview what will be created (run from the environment folder)
 az deployment sub what-if `
   --location swedencentral `
-  --template-file ../../main.bicep `
-  --parameters healthcare-chatbot-dev.bicepparam
+  --template-file ../../../main.bicep `
+  --parameters main.bicepparam
 ```
 
 ### Step 4: Deploy
 
 ```powershell
-# Deploy at subscription scope
+# Deploy at subscription scope (run from the environment folder)
 az deployment sub create `
-  --name healthcare-chatbot-onboarding `
+  --name healthcare-chatbot-dev-onboarding `
   --location swedencentral `
-  --template-file ../../main.bicep `
-  --parameters healthcare-chatbot-dev.bicepparam
+  --template-file ../../../main.bicep `
+  --parameters main.bicepparam
+
+# Or run from the citadel-access-contracts root folder:
+az deployment sub create `
+  --name healthcare-chatbot-dev-onboarding `
+  --location swedencentral `
+  --template-file main.bicep `
+  --parameters contracts/healthcare-chatbot/dev/main.bicepparam
 ```
 
 ### Step 5: Verify Deployment
@@ -386,7 +404,7 @@ print(f"Endpoint: {endpoint}")
 # api_key is ready to use as api-key header
 ```
 
-Also you can use the [citadel-governance-hub-primary-tests](../../../validation/citadel-governance-hub-primary-tests.ipynb) notebook to validate end-to-end connectivity of the newly created access contract.
+Also you can use the [citadel-access-contracts-tests](../../../validation/citadel-access-contracts-tests.ipynb) notebook to validate end-to-end connectivity of the newly created access contract.
 
 ---
 
@@ -457,13 +475,9 @@ Write-Host "##vso[task.setvariable variable=LLM_KEY;issecret=true]$oaiKey"
 
 ⚠️ **Security Note**: When using direct output, handle credentials as secrets in your CI/CD system.
 
----
+### Option 3: Use Microsoft Foundry Connections (Recommended for Agents)
 
-## 🤖 Azure AI Foundry Integration
-
-### Option 3: Use AI Foundry Connections (Recommended for Agents)
-
-**When to use**: Building AI agents in Azure AI Foundry that need APIM gateway access
+**When to use**: Building AI agents in Microsoft Foundry that need APIM gateway access
 
 ```bicep
 param useTargetFoundry = true
@@ -600,9 +614,9 @@ param services = [
 
 You can use the [default-ai-product-policy.xml](./policies/default-ai-product-policy.xml) as a base policy for LLM and extend/modify it as needed.
 
-Additional policy capabilities can be found in [Citadel-Access-Contracts-Policy.md](../../../guides/citadel-access-contracts-policy.md) for more options and patterns that can be leveraged.
+Additional policy capabilities can be found in [Citadel-Access-Contracts-Policy.md](./citadel-access-contracts-policy.md) for more options and patterns that can be leveraged.
 
->Note: APIM has power policy engine that can be used even beyond what is provided in Citadel Governnace Hub. Leverage agentic development like GitHub Copilot to help you create custom policies based on your requirements.
+>Note: APIM has power policy engine that can be used even beyond what is provided in Citadel Governance Hub. Leverage agentic development like GitHub Copilot to help you create custom policies based on your requirements.
 
 **Step 2**: Reference policy in bicepparam
 
@@ -718,38 +732,10 @@ Write-Host "##vso[task.setvariable variable=OAI_KEY;issecret=true]$($oaiCreds.ap
 
 ---
 
-## 🛠️ Troubleshooting
-
-### Common Issues
-
-| Issue | Cause | Solution |
-|-------|-------|----------|
-| **API not found** | API name doesn't exist in APIM | Verify with `az apim api list -g <rg> -n <apim>` |
-| **Authorization failed** | Missing permissions | Grant `API Management Service Contributor` |
-| **Secret not created** | Key Vault permissions | Grant `Key Vault Secrets Officer` |
-| **Product not visible** | Product not published | Check product state in APIM portal |
-| **401 on API calls** | Wrong subscription key | Verify key from Key Vault or deployment output |
-| **403 - Model Not Allowed** | Model blocked by policy | Check allowed models in policy XML |
-| **429 - Rate Limit** | Exceeded rate limit | Reduce request frequency or adjust policy |
-| **Foundry connection failed** | Missing Foundry permissions | Grant `Contributor` on Foundry resource group |
-| **Foundry account not found** | Wrong account/project name | Verify with `az cognitiveservices account show -n <name> -g <rg>` |
-| **Agent can't find models** | Discovery endpoint issue | Check `deploymentInPath` and `deploymentProvider` settings |
-
-### Getting Help
-
-- Check API errors in APIM Test Console
-- Review deployment operation logs
-- Enable APIM diagnostics for detailed request traces
-- Verify network connectivity from app to APIM
-- For Foundry issues, check connection settings in AI Foundry portal
-
----
-
 ## 📞 Support
 
 For issues or questions:
 - **GitHub Issues**: [Report bugs or request features](https://github.com/Azure-Samples/ai-hub-gateway-solution-accelerator/issues)
 - **Documentation**: Review the guides in `/guides`
-- **Foundry Integration**: See [Foundry Integration Guide](../foundry-integration/README.md)
 
 ---
