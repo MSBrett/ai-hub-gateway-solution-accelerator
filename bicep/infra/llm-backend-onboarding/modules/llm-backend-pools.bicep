@@ -52,11 +52,12 @@ var modelToBackendsMap = reduce(normalizedBackendDetails, {}, (acc, backend) => 
 }))))
 
 // Create pool configurations only for models supported by multiple backends
+// Note: Pool names must only contain letters, numbers, and hyphens (dots are stripped from model names)
 var poolConfigs = map(
   filter(items(modelToBackendsMap), (item) => length(item.value) > 1),
   (item) => {
     modelName: item.key
-    poolName: '${item.key}-backend-pool'
+    poolName: '${replace(item.key, '.', '')}-backend-pool'
     backends: item.value
   }
 )
