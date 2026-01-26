@@ -1,114 +1,14 @@
 <policies>
     <inbound>
         <base />
-        <!-- AAD Authorization -->
-        <!-- Enabled if entra-validate named value is set to true -->
-        <include-fragment fragment-id="aad-auth" />
-
-        <set-header name="api-key" exists-action="delete" />
         
-        <!-- Setting cache keys -->
-        <set-variable name="deployment-id" value="@{
-            var modelId = context.Request.MatchedParameters.GetValueOrDefault("modelId", "");
-            var classifierId = context.Request.MatchedParameters.GetValueOrDefault("classifierId", "");
-            
-            if (!string.IsNullOrEmpty(modelId))
-            {
-                return modelId;
-            }
-            else if (!string.IsNullOrEmpty(classifierId))
-            {
-                return classifierId;
-            }
-            else
-            {
-                return "Document-Intelligence";
-            }
-        }" />
-        
-        <set-variable name="routesCacheKey" value="@((string)context.Variables["deployment-id"] + "Routes" + context.Deployment.Region + context.Api.Revision)" />
-        <set-variable name="oaClustersCacheKey" value="@("aiDocIntelInstance" + context.Deployment.Region + context.Api.Revision)" />
-        <cache-lookup-value key="@((string)context.Variables.GetValueOrDefault<string>("oaClustersCacheKey", "ALL-DOCINTELL"))" variable-name="oaClusters" />
-        <!-- If we can't find the configuration cached, it will be loaded -->
-        <choose>
-            <when condition="@(context.Variables.ContainsKey("oaClusters") == false)">
-                <set-variable name="oaClusters" value="@{
-                        // route is an Azure Document Intelligence endpoint
-                        JArray routes = new JArray();
-
-                        // cluster is a group of routes that are capable of serving a specific model name
-                        JArray clusters = new JArray();
-
-                        // Update the below if condition when using multiple APIM gateway regions/SHGW to get different configurations for each region
-                        if(context.Deployment.Region == "ALL" || true)
-                        {
-                            // Adding all Azure Document Intelligence endpoints routes (which are set as APIM Backend)
-                            routes.Add(new JObject()
-                            {
-                                { "name", "Doc-Intelligence-EUS" },
-                                { "location", "East US" },
-                                { "backend-id", "REPLACE-BACKEND-ID" },
-                                { "priority", 1},
-                                { "isThrottling", false }, 
-                                { "retryAfter", DateTime.MinValue } 
-                            });
-
-                            // For each model, create a cluster with the routes that can serve it
-                            clusters.Add(new JObject()
-                            {
-                                { "deploymentName", "prebuilt-read" },
-                                { "routes", new JArray(routes[0]) }
-                            });
-
-                            clusters.Add(new JObject()
-                            {
-                                { "deploymentName", "prebuilt-layout" },
-                                { "routes", new JArray(routes[0]) }
-                            });
-
-                            clusters.Add(new JObject()
-                            {
-                                { "deploymentName", "prebuilt-healthInsuranceCard.us" },
-                                { "routes", new JArray(routes[0]) }
-                            });
-
-                            clusters.Add(new JObject()
-                            {
-                                { "deploymentName", "prebuilt-invoice" },
-                                { "routes", new JArray(routes[0]) }
-                            });
-
-                            clusters.Add(new JObject()
-                            {
-                                { "deploymentName", "prebuilt-receipt" },
-                                { "routes", new JArray(routes[0]) }
-                            });
-
-                            clusters.Add(new JObject()
-                            {
-                                { "deploymentName", "prebuilt-idDocument" },
-                                { "routes", new JArray(routes[0]) }
-                            });
-                        }
-                        else
-                        {
-                            //No clusters found for selected region, either return error (default behavior) or set default cluster in the else section
-                        }
-                        
-                        return clusters;   
-                    }" />
-                <!-- Add cluster configurations to cache -->
-                <cache-store-value key="@((string)context.Variables.GetValueOrDefault<string>("oaClustersCacheKey", "ALL-DOCINTELL"))" value="@((JArray)context.Variables["oaClusters"])" duration="86400" />
-            </when>
-        </choose>
-        <include-fragment fragment-id="validate-routes" />
         <authentication-managed-identity resource="https://cognitiveservices.azure.com" output-token-variable-name="msi-access-token" client-id="{{uami-client-id}}" ignore-error="false" />
         <set-header name="Authorization" exists-action="override">
             <value>@("Bearer " + (string)context.Variables["msi-access-token"])</value>
         </set-header>
     </inbound>
     <backend>
-        <include-fragment fragment-id="backend-routing" />
+        <base />
     </backend>
     <outbound>
         <base />
@@ -178,16 +78,10 @@
             }</value>
         </set-header>
 
-        <include-fragment fragment-id="ai-usage" />
-
         <!-- Return response body -->
         <set-body>@((string)context.Variables["responseBody"])</set-body>
     </outbound>
     <on-error>
         <base />
-        <set-variable name="service-name" value="Azure Document Intelligence" />
-        <set-variable name="target-deployment" value="@((string)context.Variables.GetValueOrDefault<string>("deployment-id", "AI-Document-Intelligence-Model"))" />
-        
-        <!-- <include-fragment fragment-id="throttling-events" /> -->
     </on-error>
 </policies>
