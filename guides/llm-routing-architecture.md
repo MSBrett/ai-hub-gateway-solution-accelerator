@@ -246,7 +246,7 @@ Both APIs implement automatic retry on transient failures:
 ```xml
 <retry count="2" interval="0" first-fast-retry="true" 
        condition="@(context.Response.StatusCode == 429 || 
-                    context.Response.StatusCode == 503)">
+                    context.Response.StatusCode >= 500)">
     <forward-request buffer-request-body="true" />
 </retry>
 ```

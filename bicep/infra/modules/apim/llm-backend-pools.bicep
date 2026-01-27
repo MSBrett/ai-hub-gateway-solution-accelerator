@@ -68,7 +68,7 @@ var poolConfigs = map(
   filter(items(modelToBackendsMap), (item) => length(item.value) > 1),
   (item) => {
     modelName: item.key
-    poolName: '${item.key}-backend-pool'
+    poolName: '${replace(item.key, '.', '')}-backend-pool'
     backends: item.value
   }
 )
