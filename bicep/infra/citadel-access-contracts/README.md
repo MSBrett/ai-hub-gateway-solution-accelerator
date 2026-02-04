@@ -1,4 +1,4 @@
-# 🚀 Use Case Onboarding for AI Citadel Governance Hub
+# 📜 Citadel Access Contracts - Use-case onboarding
 
 ## Overview
 
@@ -9,7 +9,7 @@ This package eliminates manual APIM configuration by providing:
 - 🔌 **API Integration**: Automatic API attachment to product with custom or default policies
 - 🔑 **Subscription Management**: Auto-generated subscription with secure API keys
 - 🔐 **Flexible Secret Storage**: Optional Azure Key Vault integration or direct credential output
-- 🤖 **Azure AI Foundry Integration**: Optional APIM connection creation for Foundry agents
+- 🤖 **Azure Microsoft Foundry Integration**: Optional APIM connection creation for Foundry agents
 - 📝 **Declarative Configuration**: Simple `.bicepparam` & `.xml` files for version control per use case
 
 ## What Gets Created
@@ -19,7 +19,7 @@ This package eliminates manual APIM configuration by providing:
 | **APIM Product** | `{code}-{BU}-{UseCase}-{ENV}` | Product per service (e.g., `LLM-Healthcare-PatientAssistant-DEV`) with attached APIs and policies |
 | **APIM Subscription** | `{product}-SUB-01` | Subscription with API key |
 | **Key Vault Secrets** | `{secretName}` | Endpoint URL and API key (optional) |
-| **Foundry Connection** | `{prefix}-{code}` | APIM connection for AI Foundry agents (optional) |
+| **Foundry Connection** | `{prefix}-{code}` | APIM connection for Microsoft Foundry agents (optional) |
 
 ## Key Features
 
@@ -100,7 +100,7 @@ Below is a suggested flow for client applications (i.e. agents) interacting with
 sequenceDiagram
     participant App as AI Agent/App
     participant KV as Azure Key Vault
-    participant Foundry as AI Foundry
+    participant Foundry as Microsoft Foundry
     participant APIM as AI Gateway
     participant AI as AI Services
 
@@ -137,7 +137,7 @@ citadel-access-contracts/
 │   ├── apimProduct.bicep               # APIM product module
 │   ├── apimSubscription.bicep          # Subscription module
 │   ├── kvSecrets.bicep                 # Key Vault secret storage
-│   └── foundryConnection.bicep         # Azure AI Foundry connection module
+│   └── foundryConnection.bicep         # Azure Microsoft Foundry connection module
 ├── policies/
 │   └── default-ai-product-policy.xml   # Default product policy
 ├── contracts/                          # Use-case contracts folder for source control 
@@ -181,7 +181,7 @@ citadel-access-contracts/
 | `services` | array | ✅ | Services to onboard | See [Services Schema](#services-schema) below |
 | `productTerms` | string | ❌ | Product terms of service | "By using this product..." |
 | `useTargetFoundry` | bool | ❌ | Create Foundry connections (default: `false`) | `true` or `false` |
-| `foundry` | object | ❌* | AI Foundry coordinates (*required if useTargetFoundry=true) | `{ subscriptionId, resourceGroupName, accountName, projectName }` |
+| `foundry` | object | ❌* | Microsoft Foundry coordinates (*required if useTargetFoundry=true) | `{ subscriptionId, resourceGroupName, accountName, projectName }` |
 | `foundryConfig` | object | ❌ | Foundry connection configuration | See [Foundry Config](#foundry-configuration) below |
 
 
@@ -242,7 +242,7 @@ But each service will have its own product + subscription + secrets (i.e llm wil
 | APIM Product | APIM | `<serviceCode>-<BU>-<UseCase>-<ENV>` | One per service code you include |
 | APIM Subscription | APIM | `<product>-SUB-01` | Primary key is captured into Key Vault |
 | Key Vault Secrets | KV | `endpointSecretName`, `apiKeySecretName` | One endpoint + one key per service |
-| Foundry Connection | AI Foundry | `<prefix>-<serviceCode>` | One connection per service (if enabled) |
+| Foundry Connection | Microsoft Foundry | `<prefix>-<serviceCode>` | One connection per service (if enabled) |
 
 Naming examples
 - Product: `LLM-Retail-FinancialAssistant-DEV`
@@ -259,7 +259,7 @@ Naming examples
 |----------|-------------|---------------|
 | **Citadel Compliant APIM Instance** | with published APIs matching your `apiNameMapping` | `az apim api list -g <rg> -n <apim-name>` |
 | **Azure Key Vault** | Accessible with secret set permissions (if using KV) | `az keyvault show -n <kv-name>` |
-| **Azure AI Foundry** | Account and project must exist (if using Foundry) | `az cognitiveservices account show -n <account-name> -g <rg>` |
+| **Azure Microsoft Foundry** | Account and project must exist (if using Foundry) | `az cognitiveservices account show -n <account-name> -g <rg>` |
 
 ### Permissions Required
 
@@ -269,7 +269,7 @@ The deployment identity needs:
 |-------|------|---------|
 | APIM Resource Group | `API Management Service Contributor` | Create products and subscriptions |
 | Target Key Vault (if used) | `Key Vault Secrets Officer` | Write secrets |
-| AI Foundry Resource Group (if used) | `Contributor` | Create connections |
+| Microsoft Foundry Resource Group (if used) | `Contributor` | Create connections |
 | Subscription | `Reader` | Reference existing resources |
 
 ---
@@ -505,7 +505,7 @@ param foundryConfig = {
 ```
 
 **Benefits**:
-- ✅ Seamless integration with AI Foundry agents
+- ✅ Seamless integration with Microsoft Foundry agents
 - ✅ Credentials stored securely in Foundry connection
 - ✅ Supports the "Bring Your Own AI Gateway" pattern
 - ✅ Automatic model discovery from APIM
@@ -736,6 +736,5 @@ Write-Host "##vso[task.setvariable variable=OAI_KEY;issecret=true]$($oaiCreds.ap
 
 For issues or questions:
 - **GitHub Issues**: [Report bugs or request features](https://github.com/Azure-Samples/ai-hub-gateway-solution-accelerator/issues)
-- **Documentation**: Review the guides in `/guides`
 
 ---
