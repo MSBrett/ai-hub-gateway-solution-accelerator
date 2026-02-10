@@ -94,6 +94,7 @@ param aiFoundryModelsConfig = [
     version: '2024-11-20'
     sku: 'GlobalStandard'
     capacity: 200
+    retirementDate: '2026-09-30'
     aiserviceIndex: 0
   }
   {
@@ -102,6 +103,7 @@ param aiFoundryModelsConfig = [
     version: '2024-07-18'
     sku: 'GlobalStandard'
     capacity: 200
+    retirementDate: '2026-09-30'
     aiserviceIndex: 0
   }
   {
@@ -110,6 +112,7 @@ param aiFoundryModelsConfig = [
     version: '2024-11-20'
     sku: 'GlobalStandard'
     capacity: 200
+    retirementDate: '2026-09-30'
     aiserviceIndex: 1
   }
 ]

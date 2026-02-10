@@ -41,6 +41,7 @@ param apimManagedIdentity object
     - capacity: (Optional) Capacity/TPM quota, default 100
     - modelFormat: (Optional) Model format identifier, default 'OpenAI'
     - modelVersion: (Optional) Version of the model, default '1'
+    - retirementDate: (Optional) Retirement date for the model in YYYY-MM-DD format
   - priority: (Optional) 1-5, default 1 (lower = higher priority)
   - weight: (Optional) 1-1000, default 100 (higher = more traffic)
   '''
@@ -51,8 +52,8 @@ param apimManagedIdentity object
       endpoint: 'https://my-foundry.services.ai.azure.com/'
       authScheme: 'managedIdentity'
       supportedModels: [
-        { name: 'gpt-4o', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2024-11-20' }
-        { name: 'gpt-4o-mini', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2024-07-18' }
+        { name: 'gpt-4o', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2024-11-20', retirementDate: '2026-09-30' }
+        { name: 'gpt-4o-mini', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2024-07-18', retirementDate: '2026-09-30' }
       ]
       priority: 1
       weight: 100

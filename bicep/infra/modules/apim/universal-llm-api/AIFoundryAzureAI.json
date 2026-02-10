@@ -93,9 +93,6 @@
         "description": "Gets chat completions for the provided chat messages.\nCompletions support a wide variety of tasks and generate text that continues from or \"completes\"\nprovided prompt data. The method makes a REST API call to the `/chat/completions` route\non the given endpoint.",
         "parameters": [
           {
-            "$ref": "#/components/parameters/Azure.Core.Foundations.ApiVersionParameter"
-          },
-          {
             "name": "extra-parameters",
             "in": "header",
             "required": false,
@@ -169,9 +166,6 @@
         "description": "Return the embedding vectors for given text prompts.\nThe method makes a REST API call to the `/embeddings` route on the given endpoint.",
         "parameters": [
           {
-            "$ref": "#/components/parameters/Azure.Core.Foundations.ApiVersionParameter"
-          },
-          {
             "name": "extra-parameters",
             "in": "header",
             "required": false,
@@ -236,9 +230,6 @@
         "description": "Return the embedding vectors for given images.\nThe method makes a REST API call to the `/images/embeddings` route on the given endpoint.",
         "parameters": [
           {
-            "$ref": "#/components/parameters/Azure.Core.Foundations.ApiVersionParameter"
-          },
-          {
             "name": "extra-parameters",
             "in": "header",
             "required": false,
@@ -299,9 +290,6 @@
         "description": "Generates an image based on a text or image prompt.\nThe method makes a REST API call to the `/images/generations` route on the given endpoint.",
         "parameters": [
           {
-            "$ref": "#/components/parameters/Azure.Core.Foundations.ApiVersionParameter"
-          },
-          {
             "name": "extra-parameters",
             "in": "header",
             "required": false,
@@ -360,9 +348,6 @@
         "operationId": "getModelInfo",
         "description": "Returns information about the AI model deployed.\nThe method makes a REST API call to the `/info` route on the given endpoint.\nThis method will only work when using Serverless API, Managed Compute, or Model .\ninference endpoint. Azure OpenAI endpoints don't support i.",
         "parameters": [
-          {
-            "$ref": "#/components/parameters/Azure.Core.Foundations.ApiVersionParameter"
-          },
           {
             "name": "model",
             "in": "query",
@@ -427,7 +412,7 @@
       "Azure.Core.Foundations.ApiVersionParameter": {
         "name": "api-version",
         "in": "query",
-        "required": true,
+        "required": false,
         "description": "The API version to use for this operation.",
         "schema": {
           "type": "string",

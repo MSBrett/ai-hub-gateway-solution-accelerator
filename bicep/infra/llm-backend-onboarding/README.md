@@ -68,10 +68,11 @@ param llmBackendConfig = [
     endpoint: 'https://aif-RESOURCE_TOKEN-0.cognitiveservices.azure.com/'
     authScheme: 'managedIdentity'
     supportedModels: [
-      { name: 'gpt-4o', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2024-11-20' }
-      { name: 'gpt-4o-mini', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2024-07-18' }
-      { name: 'DeepSeek-R1', sku: 'GlobalStandard', capacity: 1, modelFormat: 'DeepSeek', modelVersion: '1' }
-      { name: 'Phi-4', sku: 'GlobalStandard', capacity: 1, modelFormat: 'Microsoft', modelVersion: '3' }
+      { "name": "gpt-4o-mini", "sku": "GlobalStandard", "capacity": 100, "modelFormat": "OpenAI", "modelVersion": "2024-07-18", "retirementDate": "2026-09-30" },
+      { "name": "gpt-4o", "sku": "GlobalStandard", "capacity": 100, "modelFormat": "OpenAI", "modelVersion": "2024-11-20", "retirementDate": "2026-09-30" },
+      { "name": "DeepSeek-R1", "sku": "GlobalStandard", "capacity": 1, "modelFormat": "DeepSeek", "modelVersion": "1", "retirementDate": "2099-12-30" },
+      { "name": "Phi-4", "sku": "GlobalStandard", "capacity": 1, "modelFormat": "Microsoft", "modelVersion": "3", "retirementDate": "2099-12-30" },
+      { "name": "text-embedding-3-large", "sku": "GlobalStandard", "capacity": 100, "modelFormat": "OpenAI", "modelVersion": "1", "retirementDate": "2027-04-14" }
     ]
     priority: 1
     weight: 100
@@ -110,18 +111,19 @@ Each model in the `supportedModels` array has these properties:
 | `capacity` | number | No | Capacity/TPM quota (default: 100). Used in `get-available-models` response |
 | `modelFormat` | string | No | Model format identifier, e.g., `OpenAI`, `DeepSeek`, `Microsoft` (default: `OpenAI`). Used in `get-available-models` response |
 | `modelVersion` | string | No | Version of the model (default: `1`). Used in `get-available-models` response |
+| `retirementDate` | string (date) | No | Optional retirement date for the model. Used in `get-available-models` response |
 
 ### Backend Types
 
 #### AI Foundry (`ai-foundry`)
 - Uses Azure AI Foundry project endpoints
-- Endpoint format: `https://<resource>.services.ai.azure.com/models`
+- Endpoint format: `https://<resource>.cognitiveservices.azure.com/`
 - Authentication: Managed identity with Cognitive Services scope
 - No URL rewriting required
 
 #### Azure OpenAI (`azure-openai`)
 - Uses Azure OpenAI Service endpoints
-- Endpoint format: `https://<resource>.openai.azure.com/openai`
+- Endpoint format: `https://<resource>.openai.azure.com/`
 - Authentication: Managed identity with Cognitive Services scope
 - Automatic URL rewriting to include `/deployments/{model}/`
 
@@ -139,13 +141,14 @@ param llmBackendConfig = [
   {
     backendId: 'aif-citadel-primary'
     backendType: 'ai-foundry'
-    endpoint: 'https://aif-RESOURCE_TOKEN-0.services.ai.azure.com/models'
+    endpoint: 'https://aif-RESOURCE_TOKEN-0.cognitiveservices.azure.com/'
     authScheme: 'managedIdentity'
     supportedModels: [
-      { name: 'gpt-4o', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2024-11-20' }
-      { name: 'gpt-4o-mini', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2024-07-18' }
-      { name: 'DeepSeek-R1', sku: 'GlobalStandard', capacity: 1, modelFormat: 'DeepSeek', modelVersion: '1' }
-      { name: 'Phi-4', sku: 'GlobalStandard', capacity: 1, modelFormat: 'Microsoft', modelVersion: '3' }
+      { "name": "gpt-4o-mini", "sku": "GlobalStandard", "capacity": 100, "modelFormat": "OpenAI", "modelVersion": "2024-07-18", "retirementDate": "2026-09-30" },
+      { "name": "gpt-4o", "sku": "GlobalStandard", "capacity": 100, "modelFormat": "OpenAI", "modelVersion": "2024-11-20", "retirementDate": "2026-09-30" },
+      { "name": "DeepSeek-R1", "sku": "GlobalStandard", "capacity": 1, "modelFormat": "DeepSeek", "modelVersion": "1", "retirementDate": "2099-12-30" },
+      { "name": "Phi-4", "sku": "GlobalStandard", "capacity": 1, "modelFormat": "Microsoft", "modelVersion": "3", "retirementDate": "2099-12-30" },
+      { "name": "text-embedding-3-large", "sku": "GlobalStandard", "capacity": 100, "modelFormat": "OpenAI", "modelVersion": "1", "retirementDate": "2027-04-14" }
     ]
     priority: 1
     weight: 100
@@ -155,18 +158,21 @@ param llmBackendConfig = [
 
 ### Load Balancing Across Regions
 
+As `DeepSeek-R1` is available in 2 different backends, the onboarding script will automatically create a backend pool for `DeepSeek-R1` and distribute traffic based on the specified priority/weights.
+
 ```bicep
 param llmBackendConfig = [
   {
     backendId: 'aif-citadel-primary'
     backendType: 'ai-foundry'
-    endpoint: 'https://aif-RESOURCE_TOKEN-0.services.ai.azure.com/models'
+    endpoint: 'https://aif-RESOURCE_TOKEN-0.cognitiveservices.azure.com/'
     authScheme: 'managedIdentity'
     supportedModels: [
-      { name: 'gpt-4o', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2024-11-20' }
-      { name: 'gpt-4o-mini', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2024-07-18' }
-      { name: 'DeepSeek-R1', sku: 'GlobalStandard', capacity: 1, modelFormat: 'DeepSeek', modelVersion: '1' }
-      { name: 'Phi-4', sku: 'GlobalStandard', capacity: 1, modelFormat: 'Microsoft', modelVersion: '3' }
+      { "name": "gpt-4o-mini", "sku": "GlobalStandard", "capacity": 100, "modelFormat": "OpenAI", "modelVersion": "2024-07-18", "retirementDate": "2026-09-30" },
+      { "name": "gpt-4o", "sku": "GlobalStandard", "capacity": 100, "modelFormat": "OpenAI", "modelVersion": "2024-11-20", "retirementDate": "2026-09-30" },
+      { "name": "DeepSeek-R1", "sku": "GlobalStandard", "capacity": 1, "modelFormat": "DeepSeek", "modelVersion": "1", "retirementDate": "2099-12-30" },
+      { "name": "Phi-4", "sku": "GlobalStandard", "capacity": 1, "modelFormat": "Microsoft", "modelVersion": "3", "retirementDate": "2099-12-30" },
+      { "name": "text-embedding-3-large", "sku": "GlobalStandard", "capacity": 100, "modelFormat": "OpenAI", "modelVersion": "1", "retirementDate": "2027-04-14" }
     ]
     priority: 1
     weight: 100
@@ -174,11 +180,11 @@ param llmBackendConfig = [
   {
     backendId: 'aif-citadel-secondary'
     backendType: 'ai-foundry'
-    endpoint: 'https://aif-RESOURCE_TOKEN-1.services.ai.azure.com/models'
+    endpoint: 'https://aif-RESOURCE_TOKEN-1.cognitiveservices.azure.com/'
     authScheme: 'managedIdentity'
     supportedModels: [
-      { name: 'gpt-5', sku: 'GlobalStandard', capacity: 50, modelFormat: 'OpenAI', modelVersion: '1' }
-      { name: 'DeepSeek-R1', sku: 'GlobalStandard', capacity: 1, modelFormat: 'DeepSeek', modelVersion: '1' }
+      { "name": "gpt-5", "sku": "GlobalStandard", "capacity": 50, "modelFormat": "OpenAI", "modelVersion": "1", "retirementDate": "2027-02-05" },
+      { "name": "DeepSeek-R1", "sku": "GlobalStandard", "capacity": 1, "modelFormat": "DeepSeek", "modelVersion": "1", "retirementDate": "2099-12-30" }
     ]
     priority: 2
     weight: 50
@@ -188,18 +194,21 @@ param llmBackendConfig = [
 
 ### Mixed Providers
 
+This is mixing Azure OpenAI and Microsoft Foundry backends. Common models across providers will be automatically load balanced (like `DeepSeek-R1` and `text-embedding-3-large` in the below example), while unique models will be routed to their specific backend.
+
 ```bicep
 param llmBackendConfig = [
   {
     backendId: 'aif-citadel-primary'
     backendType: 'ai-foundry'
-    endpoint: 'https://aif-RESOURCE_TOKEN-0.services.ai.azure.com/models'
+    endpoint: 'https://aif-RESOURCE_TOKEN-0.cognitiveservices.azure.com/'
     authScheme: 'managedIdentity'
     supportedModels: [
-      { name: 'gpt-4o', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2024-11-20' }
-      { name: 'gpt-4o-mini', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2024-07-18' }
-      { name: 'DeepSeek-R1', sku: 'GlobalStandard', capacity: 1, modelFormat: 'DeepSeek', modelVersion: '1' }
-      { name: 'Phi-4', sku: 'GlobalStandard', capacity: 1, modelFormat: 'Microsoft', modelVersion: '3' }
+      { "name": "gpt-4o-mini", "sku": "GlobalStandard", "capacity": 100, "modelFormat": "OpenAI", "modelVersion": "2024-07-18", "retirementDate": "2026-09-30" },
+      { "name": "gpt-4o", "sku": "GlobalStandard", "capacity": 100, "modelFormat": "OpenAI", "modelVersion": "2024-11-20", "retirementDate": "2026-09-30" },
+      { "name": "DeepSeek-R1", "sku": "GlobalStandard", "capacity": 1, "modelFormat": "DeepSeek", "modelVersion": "1", "retirementDate": "2099-12-30" },
+      { "name": "Phi-4", "sku": "GlobalStandard", "capacity": 1, "modelFormat": "Microsoft", "modelVersion": "3", "retirementDate": "2099-12-30" },
+      { "name": "text-embedding-3-large", "sku": "GlobalStandard", "capacity": 100, "modelFormat": "OpenAI", "modelVersion": "1", "retirementDate": "2027-04-14" }
     ]
     priority: 1
     weight: 100
@@ -207,12 +216,12 @@ param llmBackendConfig = [
   {
     backendId: 'aoai-eastus-gpt4'
     backendType: 'azure-openai'
-    endpoint: 'https://YOUR-AOAI-RESOURCE.openai.azure.com/openai'
+    endpoint: 'https://YOUR-AOAI-RESOURCE.openai.azure.com/'
     authScheme: 'managedIdentity'
     supportedModels: [
-      { name: 'gpt-4o', sku: 'Standard', capacity: 120, modelFormat: 'OpenAI', modelVersion: '0613' }
-      { name: 'gpt-4o-mini', sku: 'Standard', capacity: 120, modelFormat: 'OpenAI', modelVersion: '0613' }
-      { name: 'text-embedding-ada-002', sku: 'Standard', capacity: 120, modelFormat: 'OpenAI', modelVersion: '2' }
+      { "name": "gpt-5", "sku": "GlobalStandard", "capacity": 100, "modelFormat": "OpenAI", "modelVersion": "2025-08-07", "retirementDate": "2027-02-05" },
+      { "name": "DeepSeek-R1", "sku": "GlobalStandard", "capacity": 1, "modelFormat": "DeepSeek", "modelVersion": "1", "retirementDate": "2099-12-30" },
+      { "name": "text-embedding-3-large", "sku": "GlobalStandard", "capacity": 100, "modelFormat": "OpenAI", "modelVersion": "1", "retirementDate": "2027-04-14" }
     ]
     priority: 1
     weight: 100

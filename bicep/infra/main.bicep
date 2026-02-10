@@ -435,6 +435,7 @@ param aiFoundryInstances array = [
   - version: Version of the model
   - sku: SKU name for the deployment, e.g., 'GlobalStandard', 'Standard'
   - capacity: Capacity/TPM quota
+  - retirementDate: (Optional) Retirement date for the model in YYYY-MM-DD format
   - aiserviceIndex: (Optional) Index of the AI Foundry instance to deploy to. Leave empty to deploy to all instances
   '''
 })
@@ -448,6 +449,7 @@ param aiFoundryModelsConfig array = [
     version: '2024-07-18'
     sku: 'GlobalStandard'
     capacity: 100
+    retirementDate: '2026-09-30'
     aiserviceIndex: 0
   }
   {
@@ -456,6 +458,7 @@ param aiFoundryModelsConfig array = [
     version: '2024-11-20'
     sku: 'GlobalStandard'
     capacity: 100
+    retirementDate: '2026-09-30'
     aiserviceIndex: 0
   }
   {
@@ -464,6 +467,7 @@ param aiFoundryModelsConfig array = [
     version: '1'
     sku: 'GlobalStandard'
     capacity: 1
+    retirementDate: '2099-12-30'
     aiserviceIndex: 0
   }
   {
@@ -472,6 +476,7 @@ param aiFoundryModelsConfig array = [
     version: '3'
     sku: 'GlobalStandard'
     capacity: 1
+    retirementDate: '2099-12-30'
     aiserviceIndex: 0
   }
   {
@@ -480,6 +485,7 @@ param aiFoundryModelsConfig array = [
     version: '1'
     sku: 'GlobalStandard'
     capacity: 100
+    retirementDate: '2027-04-14'
     aiserviceIndex: 0
   }
   {
@@ -488,6 +494,7 @@ param aiFoundryModelsConfig array = [
     version: '2025-08-07'
     sku: 'GlobalStandard'
     capacity: 100
+    retirementDate: '2027-02-05'
     aiserviceIndex: 1
   }
   {
@@ -496,6 +503,7 @@ param aiFoundryModelsConfig array = [
     version: '1'
     sku: 'GlobalStandard'
     capacity: 1
+    retirementDate: '2099-12-30'
     aiserviceIndex: 1
   }
   {
@@ -504,6 +512,7 @@ param aiFoundryModelsConfig array = [
     version: '1'
     sku: 'GlobalStandard'
     capacity: 100
+    retirementDate: '2027-04-14'
     aiserviceIndex: 1
   }
 ]
@@ -535,7 +544,7 @@ var transformedAiFoundryModelsConfig = [for model in aiFoundryModelsConfig: unio
 })]
 
 // Group models by aiserviceIndex for backend configuration
-// Each model now includes full metadata: name, sku, capacity, modelFormat, modelVersion
+// Each model now includes full metadata: name, sku, capacity, modelFormat, modelVersion, retirementDate
 var modelsGroupedByInstance = [for (instance, i) in aiFoundryInstances: {
   instanceIndex: i
   models: filter(map(aiFoundryModelsConfig, model => contains(model, 'aiserviceIndex') && model.aiserviceIndex == i ? {
@@ -544,6 +553,7 @@ var modelsGroupedByInstance = [for (instance, i) in aiFoundryInstances: {
     capacity: model.capacity
     modelFormat: model.publisher
     modelVersion: model.version
+    retirementDate: model.?retirementDate ?? ''
   } : {}), m => !empty(m))
 }]
 
@@ -566,6 +576,7 @@ var modelsGroupedByInstance = [for (instance, i) in aiFoundryInstances: {
  *     - capacity: Capacity/TPM quota (default: 100)
  *     - modelFormat: Model format identifier, e.g., 'OpenAI', 'DeepSeek', 'Microsoft' (default: 'OpenAI')
  *     - modelVersion: Version of the model (default: '1')
+ *     - retirementDate: (Optional) Retirement date for the model in YYYY-MM-DD format
  * - priority: (Optional) 1-5, default 1 (lower = higher priority)
  * - weight: (Optional) 1-1000, default 100 (higher = more traffic)
  * 
@@ -581,10 +592,10 @@ var modelsGroupedByInstance = [for (instance, i) in aiFoundryInstances: {
     endpoint: 'https://aif-REPLACE-0.services.ai.azure.com/models'
     authScheme: 'managedIdentity'
     supportedModels: [
-      { name: 'gpt-4o-mini', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2024-07-18' }
-      { name: 'gpt-4o', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2024-11-20' }
-      { name: 'DeepSeek-R1', sku: 'GlobalStandard', capacity: 1, modelFormat: 'DeepSeek', modelVersion: '1' }
-      { name: 'Phi-4', sku: 'GlobalStandard', capacity: 1, modelFormat: 'Microsoft', modelVersion: '3' }
+      { name: 'gpt-4o-mini', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2024-07-18', retirementDate: '2026-09-30' }
+      { name: 'gpt-4o', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2024-11-20', retirementDate: '2026-09-30' }
+      { name: 'DeepSeek-R1', sku: 'GlobalStandard', capacity: 1, modelFormat: 'DeepSeek', modelVersion: '1', retirementDate: '2099-12-30' }
+      { name: 'Phi-4', sku: 'GlobalStandard', capacity: 1, modelFormat: 'Microsoft', modelVersion: '3', retirementDate: '2099-12-30' }
     ]
     priority: 1
     weight: 100
@@ -597,8 +608,8 @@ var modelsGroupedByInstance = [for (instance, i) in aiFoundryInstances: {
     endpoint: 'https://aif-REPLACE-1.services.ai.azure.com/models'
     authScheme: 'managedIdentity'
     supportedModels: [
-      { name: 'gpt-5', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2025-08-07' }
-      { name: 'DeepSeek-R1', sku: 'GlobalStandard', capacity: 1, modelFormat: 'DeepSeek', modelVersion: '1' }
+      { name: 'gpt-5', sku: 'GlobalStandard', capacity: 100, modelFormat: 'OpenAI', modelVersion: '2025-08-07', retirementDate: '2027-02-05' }
+      { name: 'DeepSeek-R1', sku: 'GlobalStandard', capacity: 1, modelFormat: 'DeepSeek', modelVersion: '1', retirementDate: '2099-12-30' }
     ]
     priority: 1
     weight: 100

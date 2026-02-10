@@ -180,6 +180,7 @@ param aiFoundryModelsConfig = [
     version: '2024-07-18'
     sku: 'GlobalStandard'
     capacity: 100
+    retirementDate: '2026-09-30'
     aiserviceIndex: 0
   }
   {
@@ -188,6 +189,7 @@ param aiFoundryModelsConfig = [
     version: '2024-11-20'
     sku: 'GlobalStandard'
     capacity: 100
+    retirementDate: '2026-09-30'
     aiserviceIndex: 0
   }
   {
@@ -196,6 +198,7 @@ param aiFoundryModelsConfig = [
     version: '1'
     sku: 'GlobalStandard'
     capacity: 1
+    retirementDate: '2099-12-30'
     aiserviceIndex: 0
   }
   {
@@ -204,6 +207,7 @@ param aiFoundryModelsConfig = [
     version: '3'
     sku: 'GlobalStandard'
     capacity: 1
+    retirementDate: '2099-12-30'
     aiserviceIndex: 0
   }
   {
@@ -212,6 +216,7 @@ param aiFoundryModelsConfig = [
     version: '1'
     sku: 'GlobalStandard'
     capacity: 100
+    retirementDate: '2027-04-14'
     aiserviceIndex: 0
   }
   {
@@ -220,6 +225,7 @@ param aiFoundryModelsConfig = [
     version: '2025-08-07'
     sku: 'GlobalStandard'
     capacity: 100
+    retirementDate: '2027-02-05'
     aiserviceIndex: 1
   }
   {
@@ -228,6 +234,7 @@ param aiFoundryModelsConfig = [
     version: '1'
     sku: 'GlobalStandard'
     capacity: 1
+    retirementDate: '2099-12-30'
     aiserviceIndex: 1
   }
   {
@@ -236,6 +243,7 @@ param aiFoundryModelsConfig = [
     version: '1'
     sku: 'GlobalStandard'
     capacity: 100
+    retirementDate: '2027-04-14'
     aiserviceIndex: 1
   }
 ]
