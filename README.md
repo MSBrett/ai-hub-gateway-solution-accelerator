@@ -227,8 +227,10 @@ Use the following interactive Jupyter notebooks to validate and configure your C
 
 | Notebook | Description |
 |----------|-------------|
-| [**Citadel Governance Hub Primary Tests**](./validation/citadel-governance-hub-primary-tests.ipynb) | Test governance hub managed models through APIM. Includes Citadel Access Contract creation, API testing, token rate limiting validation, and streaming tests. |
-| [**LLM Backend Onboarding Runner**](./validation/llm-backend-onboarding-runner.ipynb) | Onboard existing LLMs (Microsoft Foundry models, Azure OpenAI, and others) into the AI Gateway. Generates source-controllable parameter files for LLM backends configuration. |
+| [**LLM Backend Onboarding**](./validation/llm-backend-onboarding-runner.ipynb) | Onboard existing LLMs (Microsoft Foundry models, Azure OpenAI, and others) into the AI Gateway. Generates source-controllable parameter files for LLM backends configuration. |
+| [**Citadel Access Contracts Tests**](./validation/citadel-access-contracts-tests.ipynb) | Create 3 different access contracts for 3 use cases with various integration requirements. |
+| [**Citadel Agent Frameworks Tests**](./validation/citadel-agent-frameworks-tests.ipynb) | Activate 3 different access contracts using various agent frameworks (Microsoft Agent Framework, Microsoft Foundry Agent SDK, LangChain) |
+| [**Citadel PII Processing Tests**](./validation/citadel-pii-processing-tests.ipynb) | Test PII detection and masking capabilities within the Citadel Governance Hub. |
 
 > 💡 **Tip**: These notebooks require Python with the `openai`, `requests`, and `matplotlib` among other packages highlighted in [requirements.txt](./validation/requirements.txt). Ensure you have configured your environment variables before running.
 
@@ -318,6 +320,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 *Providing protection, structure, and strength as you scale new heights with enterprise AI*
 
-[🚀 Deploy Now](./guides/quick-deployment-guide.md) | [📚 Documentation](#-comprehensive-documentation) | [🤝 Contribute](#-contributing)
+[🚀 Deploy Now](./guides/quick-deployment-guide.md) | [📚 Documentation](./guides/) | [🤝 Contribute](#-contributing)
 
 </div>
