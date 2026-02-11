@@ -994,8 +994,9 @@ module apim './modules/apim/apim.bicep' = {
     dnsSubscriptionId: !empty(dnsSubscriptionId) ? dnsSubscriptionId : subscription().subscriptionId
     dnsZoneResourceId: existingApimGatewayDnsZoneId
     isMCPSampleDeployed: true
-    apiCenterServiceName: apiCenter.outputs.name
-    apiCenterWorkspaceName: apiCenter.outputs.defaultWorkspaceName
+    enableAPICenter: enableAPICenter
+    apiCenterServiceName: enableAPICenter ? apiCenter.outputs.name : ''
+    apiCenterWorkspaceName: enableAPICenter ? apiCenter.outputs.defaultWorkspaceName : 'default'
 
   }
 }
