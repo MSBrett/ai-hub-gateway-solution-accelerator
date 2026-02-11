@@ -50,7 +50,25 @@ class Output(object):
         try:
             self.json_data = json.loads(text)
         except:
-            self.json_data = json.loads("{}")   # return an empty JSON object if the output is not valid JSON rather than None as that makes consuming it easier this way
+            # stdout may contain non-JSON text (progress indicators, warnings) before/after the JSON.
+            # Try to extract the outermost JSON object or array from the text.
+            self.json_data = Output._extract_json(text)
+
+    @staticmethod
+    def _extract_json(text):
+        """Extract the first valid JSON object or array from mixed text."""
+        for start_char, end_char in [('{', '}'), ('[', ']')]:
+            start = text.find(start_char)
+            if start == -1:
+                continue
+            # Search from the end backwards for the matching closing character
+            end = text.rfind(end_char)
+            if end > start:
+                try:
+                    return json.loads(text[start:end + 1])
+                except json.JSONDecodeError:
+                    continue
+        return json.loads("{}")  # return empty dict if no valid JSON found
 
 
 def get_current_subscription():
@@ -280,19 +298,24 @@ def run(command, ok_message = '', error_message = '', print_output = False, prin
     start_time = time.time()
 
     try:
-        completed_process = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+        completed_process = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         output_text = completed_process.stdout
+        stderr_text = completed_process.stderr
         success = completed_process.returncode == 0
     except subprocess.CalledProcessError as e:
         output_text = e.output.decode("utf-8")
+        stderr_text = e.stderr.decode("utf-8") if e.stderr else ""
         success = False
+
+    # Combine stdout and stderr for error reporting, but keep stdout clean for JSON parsing
+    combined_text = output_text + ("\n" + stderr_text if stderr_text else "")
 
     minutes, seconds = divmod(time.time() - start_time, 60)
 
     print_message = print_ok if success else print_error
 
     if (ok_message or error_message):
-        print_message(ok_message if success else error_message, output_text if not success or print_output  else "", f"[{int(minutes)}m:{int(seconds)}s]")
+        print_message(ok_message if success else error_message, combined_text if not success or print_output  else "", f"[{int(minutes)}m:{int(seconds)}s]")
 
     return Output(success, output_text)
 

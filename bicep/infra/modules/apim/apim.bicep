@@ -55,6 +55,7 @@ param apimV2PublicNetworkAccess bool = true
 param dnsZoneResourceId string = ''
 
 // API Center Integration
+param enableAPICenter bool = true
 param apiCenterServiceName string
 param apiCenterWorkspaceName string = 'default'
 param apiCenterMCPEnvironment string = 'mcp-dev'
@@ -788,7 +789,7 @@ var weatherMCPCustomProperties = {
   Type: 'AI Gateway'
   Icon: 'https://cdn-icons-png.flaticon.com/512/1163/1163661.png'
 }
-module weatherMCPApiCenter './api-center-onboarding.bicep' = if (isMCPSampleDeployed) {
+module weatherMCPApiCenter './api-center-onboarding.bicep' = if (isMCPSampleDeployed && enableAPICenter) {
   name: 'weather-mcp-api-center'
   params: {
     apicServiceName: apiCenterServiceName
@@ -821,7 +822,7 @@ var microsoftLearnMCPProperties = {
   Type: 'Remote'
   Icon: 'https://learn.microsoft.com/media/logos/logo-ms-social.png'
 }
-module microsoftLearnMCPApiCenter './api-center-onboarding.bicep' = if (isMCPSampleDeployed) {
+module microsoftLearnMCPApiCenter './api-center-onboarding.bicep' = if (isMCPSampleDeployed && enableAPICenter) {
   name: 'ms-learn-mcp-api-center'
   params: {
     apicServiceName: apiCenterServiceName
@@ -858,7 +859,7 @@ var openAIApiCustomProperties = {
   Type: 'AI Service'
   Icon: 'https://cdn.openai.com/API/logo-assets/openai-logo.svg'
 }
-module openAIApiCenter './api-center-onboarding.bicep' = {
+module openAIApiCenter './api-center-onboarding.bicep' = if (enableAPICenter) {
   name: 'openai-api-center'
   params: {
     apicServiceName: apiCenterServiceName
@@ -891,7 +892,7 @@ var aiSearchCustomProperties = {
   Type: 'AI Service'
   Icon: 'https://learn.microsoft.com/media/logos/logo-ms-social.png'
 }
-module aiSearchApiCenter './api-center-onboarding.bicep' = if (enableAzureAISearch) {
+module aiSearchApiCenter './api-center-onboarding.bicep' = if (enableAzureAISearch && enableAPICenter) {
   name: 'ai-search-api-center'
   params: {
     apicServiceName: apiCenterServiceName
@@ -924,7 +925,7 @@ var aiModelInferenceCustomProperties = {
   Type: 'AI Service'
   Icon: 'https://learn.microsoft.com/media/logos/logo-ms-social.png'
 }
-module aiModelInferenceApiCenter './api-center-onboarding.bicep' = if (enableAIModelInference) {
+module aiModelInferenceApiCenter './api-center-onboarding.bicep' = if (enableAIModelInference && enableAPICenter) {
   name: 'ai-model-inference-api-center'
   params: {
     apicServiceName: apiCenterServiceName
@@ -957,7 +958,7 @@ var openAIRealtimeCustomProperties = {
   Type: 'AI Service'
   Icon: 'https://cdn.openai.com/API/logo-assets/openai-logo.svg'
 }
-module openAIRealtimeApiCenter './api-center-onboarding.bicep' = if (enableOpenAIRealtime) {
+module openAIRealtimeApiCenter './api-center-onboarding.bicep' = if (enableOpenAIRealtime && enableAPICenter) {
   name: 'openai-realtime-api-center'
   params: {
     apicServiceName: apiCenterServiceName
@@ -990,7 +991,7 @@ var documentIntelligenceCustomProperties = {
   Type: 'AI Service'
   Icon: 'https://learn.microsoft.com/media/logos/logo-ms-social.png'
 }
-module documentIntelligenceLegacyApiCenter './api-center-onboarding.bicep' = if (enableDocumentIntelligence) {
+module documentIntelligenceLegacyApiCenter './api-center-onboarding.bicep' = if (enableDocumentIntelligence && enableAPICenter) {
   name: 'doc-intel-legacy-api-center'
   params: {
     apicServiceName: apiCenterServiceName
@@ -1016,7 +1017,7 @@ module documentIntelligenceLegacyApiCenter './api-center-onboarding.bicep' = if 
   }
 }
 
-module documentIntelligenceApiCenter './api-center-onboarding.bicep' = if (enableDocumentIntelligence) {
+module documentIntelligenceApiCenter './api-center-onboarding.bicep' = if (enableDocumentIntelligence && enableAPICenter) {
   name: 'doc-intel-api-center'
   params: {
     apicServiceName: apiCenterServiceName
@@ -1049,7 +1050,7 @@ var universalLLMCustomProperties = {
   Type: 'AI Gateway'
   Icon: 'https://learn.microsoft.com/media/logos/logo-ms-social.png'
 }
-module universalLLMApiCenter './api-center-onboarding.bicep' = {
+module universalLLMApiCenter './api-center-onboarding.bicep' = if (enableAPICenter) {
   name: 'universal-llm-api-center'
   params: {
     apicServiceName: apiCenterServiceName
@@ -1082,7 +1083,7 @@ var weatherAPICustomProperties = {
   Type: 'Sample API'
   Icon: 'https://cdn-icons-png.flaticon.com/512/1163/1163661.png'
 }
-module weatherAPIApiCenter './api-center-onboarding.bicep' = if (isMCPSampleDeployed) {
+module weatherAPIApiCenter './api-center-onboarding.bicep' = if (isMCPSampleDeployed && enableAPICenter) {
   name: 'weather-api-center'
   params: {
     apicServiceName: apiCenterServiceName
