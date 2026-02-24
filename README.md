@@ -1,5 +1,8 @@
 # 🚀 AI Hub Gateway Landing Zone
 
+[![Deploy To Azure](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazure.svg?sanitize=true)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FMSBrett%2Fai-hub-gateway-solution-accelerator%2Fmain%2Finfra%2Fmain.json)
+[![Deploy To Azure US Gov](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazuregov.svg?sanitize=true)](https://portal.azure.us/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FMSBrett%2Fai-hub-gateway-solution-accelerator%2Fmain%2Finfra%2Fmain.json)
+
 > ## 🏰 **NEW: AI Citadel Governance Hub v1 - Now in Preview!**
 > 
 > **The next evolution of AI Hub Gateway is here!** AI Citadel Governance Hub expands enterprise AI governance with three powerful pillars:
