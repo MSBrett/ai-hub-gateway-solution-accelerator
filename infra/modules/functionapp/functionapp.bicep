@@ -19,6 +19,9 @@ param cosmosContainerName string
 
 param location string = resourceGroup().location
 
+param storageEndpointSuffix string = 'core.windows.net'
+param serviceBusSuffix string = 'servicebus.windows.net'
+
 var functionPlanOS = 'Linux'
 var functionRuntime  = 'dotnet-isolated'
 var dotnetFrameworkVersion  = '8.0'
@@ -38,7 +41,7 @@ resource applicationInsights 'Microsoft.Insights/components@2020-02-02' existing
 }
 
 
-var storageAccountConnectionString = 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=core.windows.net'
+var storageAccountConnectionString = 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=${storageEndpointSuffix}'
 
 resource hostingPlan 'Microsoft.Web/serverfarms@2023-12-01' = {
   name: 'hosting-plan-${functionAppName}'
@@ -127,7 +130,7 @@ resource functionAppSettings 'Microsoft.Web/sites/config@2023-12-01' = {
       //https://learn.microsoft.com/en-us/azure/azure-functions/functions-reference?tabs=eventhubs&pivots=programming-language-csharp#common-properties-for-identity-based-connections
       EventHubConnection__clientId: functionAppmanagedIdentity.properties.clientId
       EventHubConnection__credential: 'managedidentity'
-      EventHubConnection__fullyQualifiedNamespace: '${eventHubNamespaceName}.servicebus.windows.net'
+      EventHubConnection__fullyQualifiedNamespace: '${eventHubNamespaceName}.${serviceBusSuffix}'
       EventHubName: eventHubName
 
       //CosmosDB

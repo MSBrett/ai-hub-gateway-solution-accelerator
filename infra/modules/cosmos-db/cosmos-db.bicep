@@ -89,6 +89,7 @@ param vNetName string
 param privateEndpointSubnetName string
 param cosmosDnsZoneName string
 param publicAccess string = 'Disabled'
+param cosmosDbSuffix string = 'documents.azure.com'
 
 // Use existing network/dns zone
 param dnsZoneRG string
@@ -247,4 +248,4 @@ output cosmosDbPiiUsageContainerName string = piiUsageContainer.name
 output cosmosDbPricingContainerName string = modelPricingContainer.name
 output cosmosDbStreamingExportConfigContainerName string = streamingExportConfigContainer.name
 output resourceId string = database.id
-output cosmosDbEndpoint string = 'https://${account.name}.documents.azure.com:443/'
+output cosmosDbEndpoint string = 'https://${account.name}.${cosmosDbSuffix}:443/'

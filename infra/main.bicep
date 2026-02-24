@@ -10,7 +10,7 @@ param environmentName string
 
 @minLength(1)
 @description('Primary location for all resources (filtered on available regions for Azure Open AI Service).')
-@allowed([ 'uaenorth', 'southafricanorth', 'westeurope', 'southcentralus', 'australiaeast', 'canadaeast', 'eastus', 'eastus2', 'francecentral', 'japaneast', 'northcentralus', 'swedencentral', 'switzerlandnorth', 'uksouth' ])
+@allowed([ 'uaenorth', 'southafricanorth', 'westeurope', 'southcentralus', 'australiaeast', 'canadaeast', 'eastus', 'eastus2', 'francecentral', 'japaneast', 'northcentralus', 'swedencentral', 'switzerlandnorth', 'uksouth', 'usgovvirginia', 'usgovarizona' ])
 param location string
 
 @description('Tags to be applied to resources.')
@@ -319,31 +319,57 @@ var abbrs = loadJsonContent('./abbreviations.json')
 // Generate a unique token for resources
 var resourceToken = toLower(uniqueString(subscription().id, environmentName, location))
 
-var openAiPrivateDnsZoneName = 'privatelink.openai.azure.com'
-var keyVaultPrivateDnsZoneName = 'privatelink.vaultcore.azure.net'
-var monitorPrivateDnsZoneName = 'privatelink.monitor.azure.com'
-var eventHubPrivateDnsZoneName = 'privatelink.servicebus.windows.net'
-var cosmosDbPrivateDnsZoneName = 'privatelink.documents.azure.com'
-var storageBlobPrivateDnsZoneName = 'privatelink.blob.core.windows.net'
-var storageFilePrivateDnsZoneName = 'privatelink.file.core.windows.net'
-var storageTablePrivateDnsZoneName = 'privatelink.table.core.windows.net'
-var storageQueuePrivateDnsZoneName = 'privatelink.queue.core.windows.net'
-var aiCogntiveServicesDnsZoneName = 'privatelink.cognitiveservices.azure.com'
-var apimV2SkuDnsZoneName = 'privatelink.azure-api.net'
+// Cloud-aware private DNS zone names
+var isGov = environment().name == 'AzureUSGovernment'
 
-var privateDnsZoneNames = [
-  openAiPrivateDnsZoneName
-  aiCogntiveServicesDnsZoneName
-  keyVaultPrivateDnsZoneName
-  monitorPrivateDnsZoneName
-  eventHubPrivateDnsZoneName 
-  cosmosDbPrivateDnsZoneName
-  storageBlobPrivateDnsZoneName
-  storageFilePrivateDnsZoneName
-  storageTablePrivateDnsZoneName
-  storageQueuePrivateDnsZoneName
-  apimV2SkuDnsZoneName
+var dnsZoneNames = {
+  openai: isGov ? '' : 'privatelink.openai.azure.com'
+  cognitiveservices: isGov ? 'privatelink.cognitiveservices.azure.us' : 'privatelink.cognitiveservices.azure.com'
+  vaultcore: isGov ? 'privatelink.vaultcore.usgovcloudapi.net' : 'privatelink.vaultcore.azure.net'
+  monitor: isGov ? 'privatelink.monitor.azure.us' : 'privatelink.monitor.azure.com'
+  servicebus: isGov ? 'privatelink.servicebus.usgovcloudapi.net' : 'privatelink.servicebus.windows.net'
+  documents: isGov ? 'privatelink.documents.azure.us' : 'privatelink.documents.azure.com'
+  blob: isGov ? 'privatelink.blob.core.usgovcloudapi.net' : 'privatelink.blob.core.windows.net'
+  file: isGov ? 'privatelink.file.core.usgovcloudapi.net' : 'privatelink.file.core.windows.net'
+  table: isGov ? 'privatelink.table.core.usgovcloudapi.net' : 'privatelink.table.core.windows.net'
+  queue: isGov ? 'privatelink.queue.core.usgovcloudapi.net' : 'privatelink.queue.core.windows.net'
+  azureApi: isGov ? 'privatelink.azure-api.us' : 'privatelink.azure-api.net'
+}
+
+// Cloud-aware service endpoints
+var cognitiveServicesAudience = isGov ? 'https://cognitiveservices.azure.us' : 'https://cognitiveservices.azure.com'
+var storageEndpointSuffix = isGov ? 'core.usgovcloudapi.net' : 'core.windows.net'
+var serviceBusSuffix = isGov ? 'servicebus.usgovcloudapi.net' : 'servicebus.windows.net'
+var portalUrl = isGov ? 'https://portal.azure.us' : 'https://portal.azure.com'
+var searchServiceSuffix = isGov ? 'search.azure.us' : 'search.windows.net'
+
+// Backward-compatible aliases for existing module parameter references
+var openAiPrivateDnsZoneName = dnsZoneNames.openai
+var monitorPrivateDnsZoneName = dnsZoneNames.monitor
+var eventHubPrivateDnsZoneName = dnsZoneNames.servicebus
+var cosmosDbPrivateDnsZoneName = dnsZoneNames.documents
+var storageBlobPrivateDnsZoneName = dnsZoneNames.blob
+var storageFilePrivateDnsZoneName = dnsZoneNames.file
+var storageTablePrivateDnsZoneName = dnsZoneNames.table
+var storageQueuePrivateDnsZoneName = dnsZoneNames.queue
+var aiCogntiveServicesDnsZoneName = dnsZoneNames.cognitiveservices
+
+var allDnsZoneNames = [
+  dnsZoneNames.openai
+  dnsZoneNames.cognitiveservices
+  dnsZoneNames.vaultcore
+  dnsZoneNames.monitor
+  dnsZoneNames.servicebus
+  dnsZoneNames.documents
+  dnsZoneNames.blob
+  dnsZoneNames.file
+  dnsZoneNames.table
+  dnsZoneNames.queue
+  dnsZoneNames.azureApi
 ]
+
+// Filter out empty zone names (e.g., openai in Gov)
+var privateDnsZoneNames = filter(allDnsZoneNames, zoneName => !empty(zoneName))
 
 // Organize resources in a resource group
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2021-04-01' = {
@@ -596,6 +622,9 @@ module apim './modules/apim/apim.bicep' = {
     privateEndpointSubnetId: useExistingVnet ? vnetExisting.outputs.privateEndpointSubnetId : vnet.outputs.privateEndpointSubnetId
     dnsZoneRG: !useExistingVnet ? resourceGroup.name : dnsZoneRG
     dnsSubscriptionId: !empty(dnsSubscriptionId) ? dnsSubscriptionId : subscription().subscriptionId
+    cognitiveServicesAudience: cognitiveServicesAudience
+    apimPrivateDnsZoneName: dnsZoneNames.azureApi
+    searchServiceAudience: isGov ? 'https://search.azure.us' : 'https://search.azure.com'
   }
   dependsOn: [
     vnet
@@ -621,6 +650,7 @@ module cosmosDb './modules/cosmos-db/cosmos-db.bicep' = {
     dnsSubscriptionId: !empty(dnsSubscriptionId) ? dnsSubscriptionId : subscription().subscriptionId
     throughput: cosmosDbRUs
     publicAccess: cosmosDbPublicAccess
+    cosmosDbSuffix: isGov ? 'documents.azure.us' : 'documents.azure.com'
   }
   dependsOn: [
     vnet
@@ -676,6 +706,8 @@ module functionApp './modules/functionapp/functionapp.bicep' = if(provisionFunct
     cosmosContainerName: cosmosDb.outputs.cosmosDbContainerName
     functionAppSubnetId: useExistingVnet ? vnetExisting.outputs.functionAppSubnetId : vnet.outputs.functionAppSubnetId
     functionContentShareName: functionContentShareName
+    storageEndpointSuffix: storageEndpointSuffix
+    serviceBusSuffix: serviceBusSuffix
   }
   dependsOn: [
     vnet
@@ -715,6 +747,10 @@ module logicApp './modules/logicapp/logicapp.bicep' = if (provisionLogicApp) {
     apimAppInsightsName: monitoring.outputs.applicationInsightsName
     functionAppSubnetId: useExistingVnet ? vnetExisting.outputs.functionAppSubnetId : vnet.outputs.functionAppSubnetId
     fileShareName: logicContentShareName
+    storageEndpointSuffix: storageEndpointSuffix
+    serviceBusSuffix: serviceBusSuffix
+    portalUrl: portalUrl
+    msPortalUrl: isGov ? 'https://ms.portal.azure.us' : 'https://ms.portal.azure.com'
   }
   dependsOn: [
     vnet

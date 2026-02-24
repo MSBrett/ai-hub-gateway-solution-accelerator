@@ -5,7 +5,7 @@
             <set-variable name="piiConfidenceThreshold" value="@(double.Parse(context.Variables.GetValueOrDefault<string>("piiConfidenceThreshold", "0.8")))" />
             <set-variable name="piiEntityCategoryExclusions" value="@(context.Variables.GetValueOrDefault<string>("piiEntityCategoryExclusions", ""))" />
             <set-variable name="piiDetectionLanguage" value="@(context.Variables.GetValueOrDefault<string>("piiDetectionLanguage", "en"))" />
-            <authentication-managed-identity resource="https://cognitiveservices.azure.com" output-token-variable-name="msi-access-token" client-id="{{uami-client-id}}" ignore-error="false" />
+            <authentication-managed-identity resource="{{cognitiveServicesAudience}}" output-token-variable-name="msi-access-token" client-id="{{uami-client-id}}" ignore-error="false" />
             
             <!-- Process regex patterns if provided -->
             <set-variable name="piiRegexMappings" value="@{

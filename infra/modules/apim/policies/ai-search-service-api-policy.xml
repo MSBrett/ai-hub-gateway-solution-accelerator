@@ -67,7 +67,7 @@
             </when>
         </choose>
         <include-fragment fragment-id="validate-routes" />
-        <authentication-managed-identity resource="https://search.azure.com" output-token-variable-name="msi-access-token" client-id="{{uami-client-id}}" ignore-error="false" />
+        <authentication-managed-identity resource="{{searchServiceAudience}}" output-token-variable-name="msi-access-token" client-id="{{uami-client-id}}" ignore-error="false" />
         <set-header name="Authorization" exists-action="override">
             <value>@("Bearer " + (string)context.Variables["msi-access-token"])</value>
         </set-header>

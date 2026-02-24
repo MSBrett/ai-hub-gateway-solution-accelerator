@@ -23,6 +23,11 @@ param functionAppSubnetId string
 
 param dotnetFrameworkVersion string = 'v6.0'
 
+param storageEndpointSuffix string = 'core.windows.net'
+param serviceBusSuffix string = 'servicebus.windows.net'
+param portalUrl string = 'https://portal.azure.com'
+param msPortalUrl string = 'https://ms.portal.azure.com'
+
 var docDbAccNativeContributorRoleDefinitionId = '00000000-0000-0000-0000-000000000002'
 var eventHubsDataOwnerRoleDefinitionId = resourceId('Microsoft.Authorization/roleDefinitions', 'f526a384-b230-433a-b45c-95f59c4a2dec')
 var azureMonitorLogsRoleDefinitionId = resourceId('Microsoft.Authorization/roleDefinitions', '43d0d8ad-25c7-4714-9337-8ba259a9fe05')
@@ -50,7 +55,7 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-05-01' existing 
   name: storageAccountName
 }
 
-var storageAccountConnectionString = 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=core.windows.net'
+var storageAccountConnectionString = 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=${storageEndpointSuffix}'
 
 resource hostingPlan 'Microsoft.Web/serverfarms@2024-04-01' = {
   name: 'hosting-plan-${logicAppName}'
@@ -110,7 +115,7 @@ resource functionAppSiteConfig 'Microsoft.Web/sites/config@2024-04-01' = {
     netFrameworkVersion: dotnetFrameworkVersion
     preWarmedInstanceCount: 1
     cors: {
-      allowedOrigins: ['https://portal.azure.com', 'https://ms.portal.azure.com']
+      allowedOrigins: [portalUrl, msPortalUrl]
       supportCredentials: false
     }
   }
@@ -133,7 +138,7 @@ resource functionAppSettings 'Microsoft.Web/sites/config@2024-04-01' = {
       WEBSITE_CONTENTSHARE: fileShareName
       WEBSITE_VNET_ROUTE_ALL: '0'
       WEBSITE_CONTENTOVERVNET: '1'
-      eventHub_fullyQualifiedNamespace: '${eventHubNamespaceName}.servicebus.windows.net'
+      eventHub_fullyQualifiedNamespace: '${eventHubNamespaceName}.${serviceBusSuffix}'
       eventHub_name: eventHubName
       eventHub_pii_name: eventHubPIIName
       APP_KIND: 'workflowapp'

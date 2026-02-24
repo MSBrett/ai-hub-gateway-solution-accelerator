@@ -17,7 +17,13 @@ param openAiUris array
 param managedIdentityName string
 param clientAppId string = ' '
 param tenantId string = tenant().tenantId
-param audience string = 'https://cognitiveservices.azure.com/.default'
+@description('Cognitive Services token audience URL (differs between commercial and Gov)')
+param cognitiveServicesAudience string = 'https://cognitiveservices.azure.com'
+
+@description('Azure Search token audience URL (differs between commercial and Gov)')
+param searchServiceAudience string = 'https://search.azure.com'
+
+param audience string = '${cognitiveServicesAudience}/.default'
 param eventHubName string
 param eventHubEndpoint string
 
@@ -43,7 +49,10 @@ param aiLanguageServiceUrl string
 param apimNetworkType string = 'External'
 param apimSubnetId string
 
-param apimV2PrivateDnsZoneName string = 'privatelink.azure-api.net'
+@description('Private DNS zone name for APIM gateway')
+param apimPrivateDnsZoneName string = 'privatelink.azure-api.net'
+
+param apimV2PrivateDnsZoneName string = apimPrivateDnsZoneName
 param apimV2PrivateEndpointName string
 param dnsZoneRG string = resourceGroup().name
 param dnsSubscriptionId string = subscription().subscriptionId
@@ -177,6 +186,7 @@ module apimOpenaiApi './api.bicep' = {
     openAiBackends
     throttlingEventsPolicyFragment
     dynamicThrottlingAssignmentFragment
+    cognitiveServicesAudienceNamedValue
   ]
 }
 
@@ -201,6 +211,7 @@ module apimAiSearchIndexApi './api.bicep' = if (enableAzureAISearch) {
     backendRoutingPolicyFragment
     aiUsagePolicyFragment
     throttlingEventsPolicyFragment
+    searchServiceAudienceNamedValue
   ]
 }
 
@@ -249,6 +260,7 @@ module apimAiModelInferenceApi './api.bicep' = if (enableAIModelInference) {
     backendRoutingPolicyFragment
     aiUsagePolicyFragment
     throttlingEventsPolicyFragment
+    cognitiveServicesAudienceNamedValue
   ]
 }
 
@@ -277,6 +289,7 @@ module apimOpenAIRealTimetApi './api.bicep' = if (enableOpenAIRealtime) {
     openAIUsagePolicyFragment
     openAIUsageStreamingPolicyFragment
     openAiBackends
+    cognitiveServicesAudienceNamedValue
   ]
 }
 
@@ -301,6 +314,7 @@ module apimDocumentIntelligenceLegacy './api.bicep' = if (enableDocumentIntellig
     backendRoutingPolicyFragment
     aiUsagePolicyFragment
     throttlingEventsPolicyFragment
+    cognitiveServicesAudienceNamedValue
   ]
 }
 
@@ -325,6 +339,7 @@ module apimDocumentIntelligence './api.bicep' = if (enableDocumentIntelligence) 
     backendRoutingPolicyFragment
     aiUsagePolicyFragment
     throttlingEventsPolicyFragment
+    cognitiveServicesAudienceNamedValue
   ]
 }
 
@@ -632,6 +647,26 @@ resource contentSafetyServiceUrlNamedValue 'Microsoft.ApiManagement/service/name
   }
 }
 
+resource cognitiveServicesAudienceNamedValue 'Microsoft.ApiManagement/service/namedValues@2022-08-01' = {
+  name: 'cognitiveServicesAudience'
+  parent: apimService
+  properties: {
+    displayName: 'cognitiveServicesAudience'
+    value: cognitiveServicesAudience
+    secret: false
+  }
+}
+
+resource searchServiceAudienceNamedValue 'Microsoft.ApiManagement/service/namedValues@2022-08-01' = {
+  name: 'searchServiceAudience'
+  parent: apimService
+  properties: {
+    displayName: 'searchServiceAudience'
+    value: searchServiceAudience
+    secret: false
+  }
+}
+
 // Adding Policy Fragments
 resource aadAuthPolicyFragment 'Microsoft.ApiManagement/service/policyFragments@2022-08-01' = {
   parent: apimService
@@ -729,6 +764,7 @@ resource piiAnonymizationPolicyFragment 'Microsoft.ApiManagement/service/policyF
   dependsOn: [
     piiServiceUrlNamedValue
     piiServiceKeyNamedValue
+    cognitiveServicesAudienceNamedValue
   ]
 }
 
