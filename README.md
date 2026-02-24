@@ -129,6 +129,10 @@ azd up
 
 > 💡 **Tip**: Use Azure Cloud Shell to avoid local setup. If deployment fails, retry `azd up` - it may be a [transient error](./guides/deployment-troubleshooting.md).
 
+> **Azure Government**: This template auto-detects the cloud environment via `environment().name` and switches DNS zone suffixes, service endpoints, and managed identity audiences accordingly. Deploy to Gov using the button above or by targeting a Gov subscription. Supported Gov regions: `usgovvirginia`, `usgovarizona`.
+
+> **Note**: After modifying `main.bicep`, regenerate the compiled ARM template with `az bicep build --file infra/main.bicep --outfile infra/main.json` to keep the Deploy to Azure buttons working.
+
 Once deployed, access your AI Gateway through the Azure API Management portal:
 
 ![apim-test](./assets/apim-test.png)

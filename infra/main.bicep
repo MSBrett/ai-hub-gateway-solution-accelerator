@@ -261,7 +261,7 @@ param logicContentShareName string = 'usage-logic-content'
 param openAiInstances object = {
   openAi1: {
     name: 'openai1'
-    location: 'eastus2'
+    location: location
     deployments: [
       {
         name: 'chat'
@@ -274,6 +274,69 @@ param openAiInstances object = {
           name: 'Standard'
           capacity: deploymentCapacity
         }
+
+      }
+      {
+        name: 'embedding'
+        model: {
+          format: 'OpenAI'
+          name: 'text-embedding-3-large'
+          version: '1'
+        }
+        sku: {
+          name: 'Standard'
+          capacity: deploymentCapacity
+        }
+      }
+      {
+        name: 'gpt-4o'
+        model: {
+          format: 'OpenAI'
+          name: 'gpt-4o'
+          version: '2024-05-13'
+        }
+        sku: {
+          name: 'GlobalStandard'
+          capacity: deploymentCapacity
+        }
+      }
+    ]
+  }
+  openAi2: {
+    name: 'openai2'
+    location: location
+    deployments: [
+      {
+        name: 'chat'
+        model: {
+          format: 'OpenAI'
+          name: 'gpt-4o-mini'
+          version: '2024-07-18'
+        }
+        sku: {
+          name: 'Standard'
+          capacity: deploymentCapacity
+        }
+
+      }
+    ]
+  }
+  openAi3: {
+    name: 'openai3'
+    location: location
+    deployments: [
+      {
+        name: 'chat'
+        model: {
+          format: 'OpenAI'
+          name: 'gpt-4o-mini'
+          version: '2024-07-18'
+        }
+        sku: {
+          name: 'Standard'
+          capacity: deploymentCapacity
+        }
+
       }
       {
         name: 'embedding'
@@ -333,7 +396,7 @@ var dnsZoneNames = {
   file: isGov ? 'privatelink.file.core.usgovcloudapi.net' : 'privatelink.file.core.windows.net'
   table: isGov ? 'privatelink.table.core.usgovcloudapi.net' : 'privatelink.table.core.windows.net'
   queue: isGov ? 'privatelink.queue.core.usgovcloudapi.net' : 'privatelink.queue.core.windows.net'
-  azureApi: isGov ? 'privatelink.azure-api.us' : 'privatelink.azure-api.net'
+  azureApi: isGov ? 'privatelink.azure-api.us' : 'privatelink.azure-api.net' // Gov zone unconfirmed in official PE DNS docs; validate before production
 }
 
 // Cloud-aware service endpoints
@@ -341,7 +404,6 @@ var cognitiveServicesAudience = isGov ? 'https://cognitiveservices.azure.us' : '
 var storageEndpointSuffix = isGov ? 'core.usgovcloudapi.net' : 'core.windows.net'
 var serviceBusSuffix = isGov ? 'servicebus.usgovcloudapi.net' : 'servicebus.windows.net'
 var portalUrl = isGov ? 'https://portal.azure.us' : 'https://portal.azure.com'
-var searchServiceSuffix = isGov ? 'search.azure.us' : 'search.windows.net'
 
 // Backward-compatible aliases for existing module parameter references
 var openAiPrivateDnsZoneName = dnsZoneNames.openai

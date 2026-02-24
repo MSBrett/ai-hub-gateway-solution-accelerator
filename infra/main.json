@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.38.33.27573",
-      "templateHash": "4815550533025399926"
+      "templateHash": "10598762073100711084"
     }
   },
   "parameters": {
@@ -576,7 +576,67 @@
       "defaultValue": {
         "openAi1": {
           "name": "openai1",
-          "location": "eastus2",
+          "location": "[parameters('location')]",
+          "deployments": [
+            {
+              "name": "chat",
+              "model": {
+                "format": "OpenAI",
+                "name": "gpt-4o-mini",
+                "version": "2024-07-18"
+              },
+              "sku": {
+                "name": "Standard",
+                "capacity": "[parameters('deploymentCapacity')]"
+              }
+            },
+            {
+              "name": "embedding",
+              "model": {
+                "format": "OpenAI",
+                "name": "text-embedding-3-large",
+                "version": "1"
+              },
+              "sku": {
+                "name": "Standard",
+                "capacity": "[parameters('deploymentCapacity')]"
+              }
+            },
+            {
+              "name": "gpt-4o",
+              "model": {
+                "format": "OpenAI",
+                "name": "gpt-4o",
+                "version": "2024-05-13"
+              },
+              "sku": {
+                "name": "GlobalStandard",
+                "capacity": "[parameters('deploymentCapacity')]"
+              }
+            }
+          ]
+        },
+        "openAi2": {
+          "name": "openai2",
+          "location": "[parameters('location')]",
+          "deployments": [
+            {
+              "name": "chat",
+              "model": {
+                "format": "OpenAI",
+                "name": "gpt-4o-mini",
+                "version": "2024-07-18"
+              },
+              "sku": {
+                "name": "Standard",
+                "capacity": "[parameters('deploymentCapacity')]"
+              }
+            }
+          ]
+        },
+        "openAi3": {
+          "name": "openai3",
+          "location": "[parameters('location')]",
           "deployments": [
             {
               "name": "chat",
@@ -806,7 +866,6 @@
     "storageEndpointSuffix": "[if(variables('isGov'), 'core.usgovcloudapi.net', 'core.windows.net')]",
     "serviceBusSuffix": "[if(variables('isGov'), 'servicebus.usgovcloudapi.net', 'servicebus.windows.net')]",
     "portalUrl": "[if(variables('isGov'), 'https://portal.azure.us', 'https://portal.azure.com')]",
-    "searchServiceSuffix": "[if(variables('isGov'), 'search.azure.us', 'search.windows.net')]",
     "openAiPrivateDnsZoneName": "[variables('dnsZoneNames').openai]",
     "monitorPrivateDnsZoneName": "[variables('dnsZoneNames').monitor]",
     "eventHubPrivateDnsZoneName": "[variables('dnsZoneNames').servicebus]",
