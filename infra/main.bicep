@@ -211,6 +211,9 @@ param enableAIGatewayPiiRedaction bool = true
 @description('Enable OpenAI realtime capabilities')
 param enableOpenAIRealtime bool = true
 
+@description('Provision the usage processing Logic App (requires WorkflowStandard VM quota)')
+param provisionLogicApp bool = true
+
 @description('Enable Microsoft Entra ID authentication for API Management.')
 param entraAuth bool = false
 
@@ -258,68 +261,6 @@ param logicContentShareName string = 'usage-logic-content'
 param openAiInstances object = {
   openAi1: {
     name: 'openai1'
-    location: 'eastus'
-    deployments: [
-      {
-        name: 'chat'
-        model: {
-          format: 'OpenAI'
-          name: 'gpt-4o-mini'
-          version: '2024-07-18'
-        }
-        sku: {
-          name: 'Standard'
-          capacity: deploymentCapacity
-        }
-        
-      }
-      {
-        name: 'embedding'
-        model: {
-          format: 'OpenAI'
-          name: 'text-embedding-3-large'
-          version: '1'
-        }
-        sku: {
-          name: 'Standard'
-          capacity: deploymentCapacity
-        }
-      }
-      {
-        name: 'gpt-4o'
-        model: {
-          format: 'OpenAI'
-          name: 'gpt-4o'
-          version: '2024-05-13'
-        }
-        sku: {
-          name: 'GlobalStandard'
-          capacity: deploymentCapacity
-        }
-      }
-    ]
-  }
-  openAi2: {
-    name: 'openai2'
-    location: 'northcentralus'
-    deployments: [
-      {
-        name: 'chat'
-        model: {
-          format: 'OpenAI'
-          name: 'gpt-4o-mini'
-          version: '2024-07-18'
-        }
-        sku: {
-          name: 'Standard'
-          capacity: deploymentCapacity
-        }
-        
-      }
-    ]
-  }
-  openAi3: {
-    name: 'openai3'
     location: 'eastus2'
     deployments: [
       {
@@ -333,7 +274,6 @@ param openAiInstances object = {
           name: 'Standard'
           capacity: deploymentCapacity
         }
-        
       }
       {
         name: 'embedding'
@@ -748,7 +688,7 @@ module functionApp './modules/functionapp/functionapp.bicep' = if(provisionFunct
   ]
 }
 
-module logicApp './modules/logicapp/logicapp.bicep' = {
+module logicApp './modules/logicapp/logicapp.bicep' = if (provisionLogicApp) {
   name: 'usageLogicApp'
   scope: resourceGroup
   params: {

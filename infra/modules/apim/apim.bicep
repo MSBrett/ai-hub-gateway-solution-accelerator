@@ -419,7 +419,7 @@ resource hrSubscription 'Microsoft.ApiManagement/service/subscriptions@2022-08-0
 }
 
 // HR PII Product
-resource hrPIIProduct 'Microsoft.ApiManagement/service/products@2022-08-01' = {
+resource hrPIIProduct 'Microsoft.ApiManagement/service/products@2022-08-01' = if (enablePIIAnonymization) {
   name: 'oai-hr-pii-assistant'
   parent: apimService
   properties: {
@@ -441,7 +441,7 @@ resource hrPIIProduct 'Microsoft.ApiManagement/service/products@2022-08-01' = {
   ]
 }
 
-resource hrPIIProductOpenAIApi 'Microsoft.ApiManagement/service/products/apiLinks@2023-05-01-preview' = {
+resource hrPIIProductOpenAIApi 'Microsoft.ApiManagement/service/products/apiLinks@2023-05-01-preview' = if (enablePIIAnonymization) {
   name: 'hr-pii-product-openai-api'
   parent: hrPIIProduct
   properties: {
@@ -449,7 +449,7 @@ resource hrPIIProductOpenAIApi 'Microsoft.ApiManagement/service/products/apiLink
   }
 }
 
-resource hrPIIProductPolicy 'Microsoft.ApiManagement/service/products/policies@2022-08-01' =  {
+resource hrPIIProductPolicy 'Microsoft.ApiManagement/service/products/policies@2022-08-01' = if (enablePIIAnonymization) {
   name: 'policy'
   parent: hrPIIProduct
   properties: {
@@ -461,7 +461,7 @@ resource hrPIIProductPolicy 'Microsoft.ApiManagement/service/products/policies@2
   ]
 }
 
-resource hrPIISubscription 'Microsoft.ApiManagement/service/subscriptions@2022-08-01' = {
+resource hrPIISubscription 'Microsoft.ApiManagement/service/subscriptions@2022-08-01' = if (enablePIIAnonymization) {
   name: 'oai-hr-pii-assistant-sub-01'
   parent: apimService
   properties: {
@@ -719,7 +719,7 @@ resource dynamicThrottlingAssignmentFragment 'Microsoft.ApiManagement/service/po
   }
 }
 
-resource piiAnonymizationPolicyFragment 'Microsoft.ApiManagement/service/policyFragments@2022-08-01' = {
+resource piiAnonymizationPolicyFragment 'Microsoft.ApiManagement/service/policyFragments@2022-08-01' = if (enablePIIAnonymization) {
   parent: apimService
   name: 'pii-anonymization'
   properties: {
@@ -732,7 +732,7 @@ resource piiAnonymizationPolicyFragment 'Microsoft.ApiManagement/service/policyF
   ]
 }
 
-resource piiDenonymizationPolicyFragment 'Microsoft.ApiManagement/service/policyFragments@2022-08-01' = {
+resource piiDenonymizationPolicyFragment 'Microsoft.ApiManagement/service/policyFragments@2022-08-01' = if (enablePIIAnonymization) {
   parent: apimService
   name: 'pii-deanonymization'
   properties: {
