@@ -267,8 +267,8 @@ param openAiInstances object = {
         name: 'chat'
         model: {
           format: 'OpenAI'
-          name: 'gpt-4.1-mini'
-          version: '2025-04-14'
+          name: 'gpt-4o-mini'
+          version: '2024-07-18'
         }
         sku: {
           name: 'Standard'
@@ -280,11 +280,23 @@ param openAiInstances object = {
         name: 'embedding'
         model: {
           format: 'OpenAI'
-          name: 'text-embedding-ada-002'
-          version: '2'
+          name: 'text-embedding-3-large'
+          version: '1'
         }
         sku: {
           name: 'Standard'
+          capacity: deploymentCapacity
+        }
+      }
+      {
+        name: 'gpt-4o'
+        model: {
+          format: 'OpenAI'
+          name: 'gpt-4o'
+          version: '2024-05-13'
+        }
+        sku: {
+          name: 'GlobalStandard'
           capacity: deploymentCapacity
         }
       }
@@ -298,8 +310,8 @@ param openAiInstances object = {
         name: 'chat'
         model: {
           format: 'OpenAI'
-          name: 'gpt-4.1-mini'
-          version: '2025-04-14'
+          name: 'gpt-4o-mini'
+          version: '2024-07-18'
         }
         sku: {
           name: 'Standard'
@@ -317,8 +329,8 @@ param openAiInstances object = {
         name: 'chat'
         model: {
           format: 'OpenAI'
-          name: 'gpt-4.1-mini'
-          version: '2025-04-14'
+          name: 'gpt-4o-mini'
+          version: '2024-07-18'
         }
         sku: {
           name: 'Standard'
@@ -330,8 +342,8 @@ param openAiInstances object = {
         name: 'embedding'
         model: {
           format: 'OpenAI'
-          name: 'text-embedding-ada-002'
-          version: '2'
+          name: 'text-embedding-3-large'
+          version: '1'
         }
         sku: {
           name: 'Standard'

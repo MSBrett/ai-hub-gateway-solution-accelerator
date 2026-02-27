@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.38.33.27573",
-      "templateHash": "12308035288966534474"
+      "templateHash": "10598762073100711084"
     }
   },
   "parameters": {
@@ -19,7 +19,6 @@
     },
     "location": {
       "type": "string",
-      "defaultValue": "usgovvirginia",
       "allowedValues": [
         "uaenorth",
         "southafricanorth",
@@ -583,8 +582,8 @@
               "name": "chat",
               "model": {
                 "format": "OpenAI",
-                "name": "gpt-4.1-mini",
-                "version": "2025-04-14"
+                "name": "gpt-4o-mini",
+                "version": "2024-07-18"
               },
               "sku": {
                 "name": "Standard",
@@ -595,11 +594,23 @@
               "name": "embedding",
               "model": {
                 "format": "OpenAI",
-                "name": "text-embedding-ada-002",
-                "version": "2"
+                "name": "text-embedding-3-large",
+                "version": "1"
               },
               "sku": {
                 "name": "Standard",
+                "capacity": "[parameters('deploymentCapacity')]"
+              }
+            },
+            {
+              "name": "gpt-4o",
+              "model": {
+                "format": "OpenAI",
+                "name": "gpt-4o",
+                "version": "2024-05-13"
+              },
+              "sku": {
+                "name": "GlobalStandard",
                 "capacity": "[parameters('deploymentCapacity')]"
               }
             }
@@ -613,8 +624,8 @@
               "name": "chat",
               "model": {
                 "format": "OpenAI",
-                "name": "gpt-4.1-mini",
-                "version": "2025-04-14"
+                "name": "gpt-4o-mini",
+                "version": "2024-07-18"
               },
               "sku": {
                 "name": "Standard",
@@ -631,8 +642,8 @@
               "name": "chat",
               "model": {
                 "format": "OpenAI",
-                "name": "gpt-4.1-mini",
-                "version": "2025-04-14"
+                "name": "gpt-4o-mini",
+                "version": "2024-07-18"
               },
               "sku": {
                 "name": "Standard",
@@ -643,8 +654,8 @@
               "name": "embedding",
               "model": {
                 "format": "OpenAI",
-                "name": "text-embedding-ada-002",
-                "version": "2"
+                "name": "text-embedding-3-large",
+                "version": "1"
               },
               "sku": {
                 "name": "Standard",
