@@ -11,7 +11,7 @@ param environmentName string
 @minLength(1)
 @description('Primary location for all resources (filtered on available regions for Azure Open AI Service).')
 @allowed([ 'uaenorth', 'southafricanorth', 'westeurope', 'southcentralus', 'australiaeast', 'canadaeast', 'eastus', 'eastus2', 'francecentral', 'japaneast', 'northcentralus', 'swedencentral', 'switzerlandnorth', 'uksouth', 'usgovvirginia', 'usgovarizona' ])
-param location string
+param location string = 'usgovvirginia'
 
 @description('Tags to be applied to resources.')
 param tags object = { 'azd-env-name': environmentName, 'SecurityControl': 'Ignore' }
