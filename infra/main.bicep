@@ -288,18 +288,6 @@ param openAiInstances object = {
           capacity: deploymentCapacity
         }
       }
-      {
-        name: 'gpt-4o'
-        model: {
-          format: 'OpenAI'
-          name: 'gpt-4o'
-          version: '2024-11-20'
-        }
-        sku: {
-          name: 'Standard'
-          capacity: deploymentCapacity
-        }
-      }
     ]
   }
   openAi2: {
