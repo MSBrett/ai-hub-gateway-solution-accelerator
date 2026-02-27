@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.38.33.27573",
-      "templateHash": "17872515069922047245"
+      "templateHash": "9262277529295684522"
     }
   },
   "parameters": {
@@ -608,7 +608,7 @@
               "model": {
                 "format": "OpenAI",
                 "name": "gpt-4o",
-                "version": "2024-05-13"
+                "version": "2024-11-20"
               },
               "sku": {
                 "name": "GlobalStandard",

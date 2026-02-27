@@ -293,7 +293,7 @@ param openAiInstances object = {
         model: {
           format: 'OpenAI'
           name: 'gpt-4o'
-          version: '2024-05-13'
+          version: '2024-11-20'
         }
         sku: {
           name: 'GlobalStandard'
